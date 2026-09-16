@@ -572,5 +572,60 @@ impl From<IpcForwardResponse> for ForwardResponse {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct IpcAppSettings {
+    pub autostart: bool,
+    pub minimize_to_tray: bool,
+    pub notify_new_movies: bool,
+    pub notify_mode: String,
+    pub check_interval_mins: u32,
+}
 
+impl From<pb_core::models::AppSettings> for IpcAppSettings {
+    fn from(s: pb_core::models::AppSettings) -> Self {
+        Self {
+            autostart: s.autostart,
+            minimize_to_tray: s.minimize_to_tray,
+            notify_new_movies: s.notify_new_movies,
+            notify_mode: s.notify_mode,
+            check_interval_mins: s.check_interval_mins,
+        }
+    }
+}
 
+impl From<IpcAppSettings> for pb_core::models::AppSettings {
+    fn from(s: IpcAppSettings) -> Self {
+        Self {
+            autostart: s.autostart,
+            minimize_to_tray: s.minimize_to_tray,
+            notify_new_movies: s.notify_new_movies,
+            notify_mode: s.notify_mode,
+            check_interval_mins: s.check_interval_mins,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct IpcMovieUpdateEvent {
+    pub movie_slug: String,
+    pub movie_name: String,
+    pub episode: Option<String>,
+    pub poster_url: Option<String>,
+    pub is_new_movie: bool,
+    pub source: String,
+}
+
+impl From<pb_core::models::MovieUpdateEvent> for IpcMovieUpdateEvent {
+    fn from(e: pb_core::models::MovieUpdateEvent) -> Self {
+        Self {
+            movie_slug: e.movie_slug,
+            movie_name: e.movie_name,
+            episode: e.episode,
+            poster_url: e.poster_url,
+            is_new_movie: e.is_new_movie,
+            source: e.source,
+        }
+    }
+}

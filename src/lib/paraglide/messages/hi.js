@@ -1822,3 +1822,143 @@ export const leaderboard_movies = /** @type {(inputs: Leaderboard_MoviesInputs) 
 export const leaderboard_comments = /** @type {(inputs: Leaderboard_CommentsInputs) => LocalizedString} */ (i) => {
 	return /** @type {LocalizedString} */ (`${i?.count} comments`)
 };
+
+export const sidebar_settings_title = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`सेटिंग्स`)
+};
+
+export const sidebar_settings_tp = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`ऐप सेटिंग्स`)
+};
+
+export const settings_title = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`ऐप सेटिंग्स`)
+};
+
+export const settings_description = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`स्टार्टअप, बैकग्राउंड निष्पादन और नई मूवी डेस्कटॉप सूचनाएं कस्टमाइज़ करें`)
+};
+
+export const settings_language_group = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`भाषा और प्रदर्शन`)
+};
+
+export const settings_language_label = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`प्रदर्शन भाषा`)
+};
+
+export const settings_language_desc = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`संपूर्ण एप्लिकेशन में अपनी पसंदीदा इंटरफ़ेस भाषा चुनें`)
+};
+
+export const settings_system_group = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`सिस्टम और बैकग्राउंड`)
+};
+
+export const settings_autostart_title = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`सिस्टम बूट पर प्रारंभ करें`)
+};
+
+export const settings_autostart_desc = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`कंप्यूटर शुरू होने पर स्वचालित रूप से ट्रे में छोटा होकर लॉन्च करें`)
+};
+
+export const settings_tray_title = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`सिस्टम ट्रे में छोटा करें`)
+};
+
+export const settings_tray_desc = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`विंडो (X) बंद करने पर, ऐप बंद होने के बजाय बैकग्राउंड में चलता रहता है`)
+};
+
+export const settings_notification_group = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`नई मूवी सूचनाएं`)
+};
+
+export const settings_notify_title = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`डेस्कटॉप सूचनाएं सक्षम करें`)
+};
+
+export const settings_notify_desc = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`नई फिल्में या एपिसोड आने पर स्क्रीन पर सूचनाएं दिखाएं`)
+};
+
+export const settings_scope_label = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`अधिसूचना दायरा`)
+};
+
+export const settings_scope_all = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`सभी नई फिल्में`)
+};
+
+export const settings_scope_all_desc = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`सीरीज़, एकल फिल्में और नए अपडेट`)
+};
+
+export const settings_scope_fav = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`केवल पसंदीदा`)
+};
+
+export const settings_scope_fav_desc = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`केवल तभी सूचित करें जब बुकमार्क की गई फिल्मों में नए एपिसोड हों`)
+};
+
+export const settings_interval_label = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`जांच अंतराल`)
+};
+
+export const settings_interval_desc = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`आवधिक पृष्ठभूमि स्कैन आवृत्ति`)
+};
+
+export const settings_interval_15m = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`15 मिनट`)
+};
+
+export const settings_interval_30m = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`30 मिनट`)
+};
+
+export const settings_interval_1h = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`1 घंटा`)
+};
+
+export const settings_interval_2h = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`2 घंटे`)
+};
+
+export const settings_scan_btn = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`अभी अपडेट के लिए स्कैन करें`)
+};
+
+export const settings_scanning_btn = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`अपडेट की जांच हो रही है...`)
+};
+
+export const settings_scan_found = /** @type {(inputs: any) => LocalizedString} */ (i) => {
+	return /** @type {LocalizedString} */ (`${i?.count ?? ''} नई फिल्में/एपिसोड अपडेट मिले!`)
+};
+
+export const settings_scan_empty = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`सभी मूवी सूचियां अद्यतित हैं।`)
+};
+
+export const settings_scan_error = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`इस समय जांच करने में असमर्थ, कृपया बाद में पुनः प्रयास करें।`)
+};
+
+export const settings_saved_status = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`सेटिंग्स स्वतः सहेजी गईं`)
+};
+
+export const settings_save_btn = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`परिवर्तन सहेजें`)
+};
+
+export const settings_seo_title = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`सेटिंग्स`)
+};
+
+export const settings_scan_hint = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`स्कैन चक्र की प्रतीक्षा किए बिना तुरंत नई फिल्मों की जांच करें`)
+};

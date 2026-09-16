@@ -1,29 +1,44 @@
 {
-  "sessionId": "285e3133-4fb0-4d9c-9410-6a3bd1160cf9",
-  "title": "Create multi-platform GitHub Action build workflow for macOS, Linux, and Windows with popular formats",
+  "sessionId": "c216e95c-2bf9-48b4-9ba4-4c93149024e8",
+  "title": "Merge About and Settings into unified /settings layout with subpages and update sidebar",
   "requirements": [
     {
       "id": "R1",
-      "description": "Create .github/workflows/release.yml supporting multiplatform builds across macOS (DMG), Linux (AppImage, DEB), and Windows (NSIS .exe, MSI)",
-      "checks": ["ci-workflow-tests"]
+      "description": "Sidebar: Remove Giới thiệu icon from appbar/sidebar, retain Settings icon pointing to /settings, and update menu-bg slider positions",
+      "checks": ["settings-merge-tests"]
     },
     {
       "id": "R2",
-      "description": "Configure build matrix and prerequisites for all 3 OS platforms including Bun runtime, Rust toolchain, Linux WebKitGTK 4.1 and mold linker dependencies, and Tauri Action",
-      "checks": ["ci-workflow-tests"]
+      "description": "Settings Drawer Layout: Migrate drawer layout from gioi-thieu to src/routes/settings/+layout.svelte with 3 items in order: Cài đặt (/settings), Về chúng tôi (/settings/about), and Tài liệu (/settings/docs)",
+      "checks": ["settings-merge-tests", "frontend-typecheck"]
     },
     {
       "id": "R3",
-      "description": "Verify workflow YAML validity, matrix coverage, popular format artifacts, and passing test suites in scripts/agent/ci_workflow.test.ts",
-      "checks": ["ci-workflow-tests"]
+      "description": "Pages Migration: Move settings UI into src/routes/settings/+page.svelte, about UI into src/routes/settings/about/+page.svelte, and docs UI into src/routes/settings/docs/+page.svelte",
+      "checks": ["settings-merge-tests", "frontend-typecheck", "frontend-build-check"]
+    },
+    {
+      "id": "R4",
+      "description": "Link & Legacy Migration: Update old links across the app (Footer, UserMenu, Profile) to new /settings paths and ensure backward compatibility / redirects",
+      "checks": ["settings-merge-tests", "frontend-typecheck", "frontend-build-check"]
     }
   ],
   "checks": [
     {
-      "id": "ci-workflow-tests",
-      "command": ["bun", "test", "scripts/agent/ci_workflow.test.ts"],
-      "timeoutMs": 120000,
-      "testFormat": "bun"
+      "id": "settings-merge-tests",
+      "command": ["bun", "test", "scripts/agent/settings_merge.test.ts"],
+      "testFormat": "bun",
+      "timeoutMs": 60000
+    },
+    {
+      "id": "frontend-typecheck",
+      "command": ["bun", "run", "check"],
+      "timeoutMs": 180000
+    },
+    {
+      "id": "frontend-build-check",
+      "command": ["bun", "run", "build"],
+      "timeoutMs": 300000
     }
   ]
 }

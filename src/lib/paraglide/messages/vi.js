@@ -1846,3 +1846,143 @@ export const leaderboard_movies = /** @type {(inputs: Leaderboard_MoviesInputs) 
 export const leaderboard_comments = /** @type {(inputs: Leaderboard_CommentsInputs) => LocalizedString} */ (i) => {
 	return /** @type {LocalizedString} */ (`${i?.count} bình luận`)
 };
+
+export const sidebar_settings_title = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Cài đặt`)
+};
+
+export const sidebar_settings_tp = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Cài đặt ứng dụng`)
+};
+
+export const settings_title = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Cài đặt ứng dụng`)
+};
+
+export const settings_description = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Tùy chỉnh tính năng khởi động, chạy nền và thông báo phim mới`)
+};
+
+export const settings_language_group = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Giao diện & Ngôn ngữ`)
+};
+
+export const settings_language_label = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Ngôn ngữ hiển thị`)
+};
+
+export const settings_language_desc = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Chọn ngôn ngữ giao diện ưu tiên của bạn trên toàn bộ ứng dụng`)
+};
+
+export const settings_system_group = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Hệ thống & Chạy nền`)
+};
+
+export const settings_autostart_title = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Khởi động cùng máy tính`)
+};
+
+export const settings_autostart_desc = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Tự động khởi động ngầm vào khay hệ thống khi bạn bật máy`)
+};
+
+export const settings_tray_title = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Thu nhỏ vào khay hệ thống`)
+};
+
+export const settings_tray_desc = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Khi bấm nút đóng (X), app tiếp tục chạy ngầm thay vì tắt hẳn`)
+};
+
+export const settings_notification_group = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Thông báo phim mới`)
+};
+
+export const settings_notify_title = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Bật thông báo đẩy`)
+};
+
+export const settings_notify_desc = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Hiển thị thông báo trên màn hình khi có phim mới hoặc tập mới`)
+};
+
+export const settings_scope_label = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Phạm vi nhận thông báo`)
+};
+
+export const settings_scope_all = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Tất cả phim mới`)
+};
+
+export const settings_scope_all_desc = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Phim bộ, phim lẻ và phim mới cập nhật`)
+};
+
+export const settings_scope_fav = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Chỉ phim Yêu thích`)
+};
+
+export const settings_scope_fav_desc = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Thông báo khi phim đang theo dõi có tập mới`)
+};
+
+export const settings_interval_label = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Tần suất kiểm tra`)
+};
+
+export const settings_interval_desc = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Thời gian định kỳ quét phim mới ngầm`)
+};
+
+export const settings_interval_15m = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`15 phút`)
+};
+
+export const settings_interval_30m = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`30 phút`)
+};
+
+export const settings_interval_1h = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`1 giờ`)
+};
+
+export const settings_interval_2h = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`2 giờ`)
+};
+
+export const settings_scan_btn = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Quét phim mới ngay`)
+};
+
+export const settings_scanning_btn = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Đang kiểm tra...`)
+};
+
+export const settings_scan_found = /** @type {(inputs: any) => LocalizedString} */ (i) => {
+	return /** @type {LocalizedString} */ (`Tìm thấy ${i?.count ?? ''} phim/tập mới vừa cập nhật!`)
+};
+
+export const settings_scan_empty = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Tất cả danh sách phim đã mới nhất.`)
+};
+
+export const settings_scan_error = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Không thể kiểm tra lúc này, vui lòng thử lại sau.`)
+};
+
+export const settings_saved_status = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Đã lưu cài đặt tự động`)
+};
+
+export const settings_save_btn = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Lưu thay đổi`)
+};
+
+export const settings_seo_title = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Cài đặt`)
+};
+
+export const settings_scan_hint = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Kiểm tra phim mới ngay bây giờ mà không cần chờ tới chu kỳ quét`)
+};

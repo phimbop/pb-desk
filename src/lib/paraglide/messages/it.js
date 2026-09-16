@@ -1834,3 +1834,143 @@ export const leaderboard_movies = /** @type {(inputs: Leaderboard_MoviesInputs) 
 export const leaderboard_comments = /** @type {(inputs: Leaderboard_CommentsInputs) => LocalizedString} */ (i) => {
 	return /** @type {LocalizedString} */ (`${i?.count} commenti`)
 };
+
+export const sidebar_settings_title = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Impostazioni`)
+};
+
+export const sidebar_settings_tp = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Impostazioni applicazione`)
+};
+
+export const settings_title = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Impostazioni applicazione`)
+};
+
+export const settings_description = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Personalizza l'avvio, l'esecuzione in background e le notifiche desktop per i nuovi film`)
+};
+
+export const settings_language_group = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Lingua e visualizzazione`)
+};
+
+export const settings_language_label = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Lingua di visualizzazione`)
+};
+
+export const settings_language_desc = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Seleziona la lingua dell'interfaccia preferita per l'intera applicazione`)
+};
+
+export const settings_system_group = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Sistema e background`)
+};
+
+export const settings_autostart_title = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Avvia all'avvio del sistema`)
+};
+
+export const settings_autostart_desc = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Avvia automaticamente ridotto nella barra delle applicazioni all'avvio del computer`)
+};
+
+export const settings_tray_title = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Riduci nella barra delle applicazioni`)
+};
+
+export const settings_tray_desc = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Alla chiusura della finestra (X), l'app continua a funzionare in background anziché chiudersi`)
+};
+
+export const settings_notification_group = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Notifiche nuovi film`)
+};
+
+export const settings_notify_title = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Attiva le notifiche desktop`)
+};
+
+export const settings_notify_desc = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Mostra notifiche sullo schermo all'arrivo di nuovi film o episodi`)
+};
+
+export const settings_scope_label = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Ambito di notifica`)
+};
+
+export const settings_scope_all = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Tutti i nuovi film`)
+};
+
+export const settings_scope_all_desc = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Serie, film e aggiornamenti recenti`)
+};
+
+export const settings_scope_fav = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Solo preferiti`)
+};
+
+export const settings_scope_fav_desc = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Notifica solo quando i film salvati hanno nuovi episodi`)
+};
+
+export const settings_interval_label = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Intervallo di controllo`)
+};
+
+export const settings_interval_desc = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Frequenza di scansione periodica in background`)
+};
+
+export const settings_interval_15m = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`15 minuti`)
+};
+
+export const settings_interval_30m = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`30 minuti`)
+};
+
+export const settings_interval_1h = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`1 ora`)
+};
+
+export const settings_interval_2h = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`2 ore`)
+};
+
+export const settings_scan_btn = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Verifica aggiornamenti ora`)
+};
+
+export const settings_scanning_btn = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Controllo aggiornamenti in corso...`)
+};
+
+export const settings_scan_found = /** @type {(inputs: any) => LocalizedString} */ (i) => {
+	return /** @type {LocalizedString} */ (`Trovati ${i?.count ?? ''} nuovi film/episodi aggiornati!`)
+};
+
+export const settings_scan_empty = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Tutti gli elenchi dei film sono aggiornati.`)
+};
+
+export const settings_scan_error = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Impossibile verificare al momento, riprova più tardi.`)
+};
+
+export const settings_saved_status = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Impostazioni salvate automaticamente`)
+};
+
+export const settings_save_btn = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Salva modifiche`)
+};
+
+export const settings_seo_title = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Impostazioni`)
+};
+
+export const settings_scan_hint = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Controlla subito i nuovi film senza attendere il ciclo di scansione`)
+};

@@ -197,4 +197,19 @@ export interface Notification {
 	created_at: string;
 }
 
+export interface AppSettings {
+	autostart: boolean;
+	minimizeToTray: boolean;
+	notifyNewMovies: boolean;
+	notifyMode: 'all' | 'favorites_only';
+	checkIntervalMins: number;
+}
 
+export interface MovieUpdateEvent {
+	movieSlug: string;
+	movieName: string;
+	episode?: string | null;
+	posterUrl?: string | null;
+	isNewMovie: boolean;
+	source: string;
+}

@@ -4,6 +4,6 @@
 	import { localizeHref } from '$lib/paraglide/runtime';
 
 	onMount(() => {
-		goto(localizeHref('/settings/docs'), { replaceState: true });
+		goto(localizeHref('/settings'), { replaceState: true });
 	});
 </script>

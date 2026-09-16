@@ -83,4 +83,44 @@ mod tests {
         let cached = storage.get_cached_json("test_key").unwrap();
         assert_eq!(cached, Some("{\"hello\":\"world\"}".to_string()));
     }
+
+    #[test]
+    fn test_settings_and_notified_movies() {
+        let storage = SqliteStorage::new_in_memory().unwrap();
+
+        // 1. Settings default
+        let default_settings = storage.get_settings().unwrap();
+        assert!(default_settings.autostart);
+        assert!(default_settings.minimize_to_tray);
+
+        // 2. Save custom settings
+        let mut custom = default_settings;
+        custom.autostart = false;
+        custom.check_interval_mins = 30;
+        storage.save_settings(&custom).unwrap();
+
+        let loaded = storage.get_settings().unwrap();
+        assert!(!loaded.autostart);
+        assert_eq!(loaded.check_interval_mins, 30);
+
+        // 3. Notified movies
+        assert!(!storage.is_movie_notified("attack-on-titan", Some("Tập 1")).unwrap());
+
+        let notified_item = pb_core::models::NotifiedMovie {
+            movie_slug: "attack-on-titan".to_string(),
+            movie_name: "Attack on Titan".to_string(),
+            last_episode: Some("Tập 1".to_string()),
+            notified_at: Utc::now(),
+        };
+        storage.mark_movie_notified(notified_item).unwrap();
+
+        // Same episode should return true (already notified)
+        assert!(storage.is_movie_notified("attack-on-titan", Some("Tập 1")).unwrap());
+        // New episode should return false (not notified yet!)
+        assert!(!storage.is_movie_notified("attack-on-titan", Some("Tập 2")).unwrap());
+
+        let list = storage.get_notified_movies(10).unwrap();
+        assert_eq!(list.len(), 1);
+        assert_eq!(list[0].movie_slug, "attack-on-titan");
+    }
 }

@@ -76,6 +76,13 @@
 				>
 					{m.profile_title()}
 				</a>
+				<a
+					href={localizeHref('/settings')}
+					onclick={() => (showMenu = false)}
+					class="block w-full text-left px-4 py-2 text-sm text-neutral-300 hover:bg-neutral-800 hover:text-white transition-colors"
+				>
+					{m.sidebar_settings_title()}
+				</a>
 				<button
 					onclick={logout}
 					class="w-full text-left px-4 py-2 text-sm text-neutral-300 hover:bg-neutral-800 hover:text-white border-t border-neutral-800 transition-colors"

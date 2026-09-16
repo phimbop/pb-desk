@@ -12,7 +12,9 @@ import type {
 	PaginatedResponse,
 	WatchHistory,
 	WatchStats,
-	WatchingItem
+	WatchingItem,
+	AppSettings,
+	MovieUpdateEvent
 } from './types';
 
 // Check if running inside Tauri webview
@@ -547,6 +549,33 @@ SELECT user, count() AS count FROM user_played_list GROUP BY user;`;
 			});
 		}
 
+		case 'get_app_settings': {
+			const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('app_settings') : null;
+			if (saved) {
+				try {
+					return JSON.parse(saved) as T;
+				} catch {}
+			}
+			return {
+				autostart: true,
+				minimizeToTray: true,
+				notifyNewMovies: true,
+				notifyMode: 'all',
+				checkIntervalMins: 15
+			} as T;
+		}
+
+		case 'save_app_settings': {
+			if (typeof localStorage !== 'undefined' && args?.settings) {
+				localStorage.setItem('app_settings', JSON.stringify(args.settings));
+			}
+			return undefined as T;
+		}
+
+		case 'check_for_movie_updates': {
+			return [] as T;
+		}
+
 		default:
 			throw new Error(`Unknown command: ${command}`);
 	}
@@ -593,8 +622,55 @@ export const api = {
 	forwardApi: (req: ForwardRequest) =>
 		safeInvoke<ForwardResponse>('forward_api', { req }),
 	getUserWatchStats: (userId: string) =>
-		safeInvoke<WatchStats>('get_user_watch_stats', { userId, user_id: userId })
+		safeInvoke<WatchStats>('get_user_watch_stats', { userId, user_id: userId }),
+	getAppSettings: () => safeInvoke<AppSettings>('get_app_settings'),
+	saveAppSettings: (settings: AppSettings) => safeInvoke<void>('save_app_settings', { settings }),
+	checkForMovieUpdates: () => safeInvoke<MovieUpdateEvent[]>('check_for_movie_updates')
 };
+
+export async function enableAutostart(): Promise<boolean> {
+	if (isTauri()) {
+		try {
+			const { enable, isEnabled } = await import('@tauri-apps/plugin-autostart');
+			if (!(await isEnabled())) {
+				await enable();
+			}
+			return true;
+		} catch (e) {
+			console.warn('[Autostart] enable failed:', e);
+			return false;
+		}
+	}
+	return false;
+}
+
+export async function disableAutostart(): Promise<boolean> {
+	if (isTauri()) {
+		try {
+			const { disable, isEnabled } = await import('@tauri-apps/plugin-autostart');
+			if (await isEnabled()) {
+				await disable();
+			}
+			return true;
+		} catch (e) {
+			console.warn('[Autostart] disable failed:', e);
+			return false;
+		}
+	}
+	return false;
+}
+
+export async function checkAutostartEnabled(): Promise<boolean> {
+	if (isTauri()) {
+		try {
+			const { isEnabled } = await import('@tauri-apps/plugin-autostart');
+			return await isEnabled();
+		} catch {
+			return false;
+		}
+	}
+	return false;
+}
 
 /**
  * Universal appFetch helper that automatically routes /api/* requests

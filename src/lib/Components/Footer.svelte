@@ -143,8 +143,8 @@
 		{
 			group: 'Phimbop',
 			items: [
-				{ title: m.footer_about_us(), href: '/gioi-thieu' },
-				{ title: m.footer_user_guide(), href: '/gioi-thieu/huong-dan-su-dung-phimbop' },
+				{ title: m.footer_about_us(), href: '/settings/about' },
+				{ title: m.footer_user_guide(), href: '/settings/docs' },
 				{ title: m.footer_domain_updates(), href: 'https://linktr.ee/phimbop ' },
 				{ title: m.footer_telegram(), href: 'https://t.me/phimbop_group ' },
 				{ title: m.footer_advertise(), href: 'mailto:phimbop@duck.com' },

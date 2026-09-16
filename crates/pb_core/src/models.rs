@@ -203,5 +203,41 @@ pub struct ForwardResponse {
     pub session_token: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct NotifiedMovie {
+    pub movie_slug: String,
+    pub movie_name: String,
+    pub last_episode: Option<String>,
+    pub notified_at: DateTime<Utc>,
+}
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct AppSettings {
+    pub autostart: bool,
+    pub minimize_to_tray: bool,
+    pub notify_new_movies: bool,
+    pub notify_mode: String, // "all" | "favorites_only"
+    pub check_interval_mins: u32,
+}
 
+impl Default for AppSettings {
+    fn default() -> Self {
+        Self {
+            autostart: true,
+            minimize_to_tray: true,
+            notify_new_movies: true,
+            notify_mode: "all".to_string(),
+            check_interval_mins: 15,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct MovieUpdateEvent {
+    pub movie_slug: String,
+    pub movie_name: String,
+    pub episode: Option<String>,
+    pub poster_url: Option<String>,
+    pub is_new_movie: bool,
+    pub source: String,
+}

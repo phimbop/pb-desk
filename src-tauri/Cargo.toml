@@ -21,6 +21,8 @@ pb_service = { workspace = true }
 pb_ipc = { workspace = true }
 tauri = { workspace = true }
 tauri-plugin-opener = { workspace = true }
+tauri-plugin-autostart = { workspace = true }
+tauri-plugin-notification = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }

@@ -31,4 +31,18 @@ mod tests {
         assert!(res.success);
         assert!(res.data.is_some());
     }
+
+    #[test]
+    fn test_app_settings_conversion() {
+        let settings = pb_core::models::AppSettings::default();
+        let ipc: IpcAppSettings = settings.clone().into();
+        assert!(ipc.autostart);
+        assert!(ipc.minimize_to_tray);
+        assert!(ipc.notify_new_movies);
+        assert_eq!(ipc.notify_mode, "all");
+        assert_eq!(ipc.check_interval_mins, 15);
+
+        let back: pb_core::models::AppSettings = ipc.into();
+        assert_eq!(back, settings);
+    }
 }

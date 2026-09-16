@@ -3,7 +3,9 @@ use std::sync::Mutex;
 use chrono::{DateTime, Utc};
 use rusqlite::{params, Connection};
 use pb_core::error::{PbError, PbResult};
-use pb_core::models::{FavoriteMovieItem, MovieDetail, PaginatedResult, WatchHistoryItem};
+use pb_core::models::{
+    AppSettings, FavoriteMovieItem, MovieDetail, NotifiedMovie, PaginatedResult, WatchHistoryItem,
+};
 use pb_core::traits::{FavoriteRepository, HistoryRepository, MovieCacheRepository};
 
 pub struct SqliteStorage {
@@ -29,6 +31,112 @@ impl SqliteStorage {
         Ok(Self {
             conn: Mutex::new(conn),
         })
+    }
+
+    pub fn get_settings(&self) -> PbResult<AppSettings> {
+        let conn = self.conn.lock().map_err(|_| PbError::Internal("Lock poisoned".into()))?;
+        let mut stmt = conn
+            .prepare("SELECT value FROM app_settings WHERE key = 'config'")
+            .map_err(|e| PbError::Database(e.to_string()))?;
+
+        let mut rows = stmt
+            .query(params![])
+            .map_err(|e| PbError::Database(e.to_string()))?;
+
+        if let Some(row) = rows.next().map_err(|e| PbError::Database(e.to_string()))? {
+            let json_str: String = row.get(0).map_err(|e| PbError::Database(e.to_string()))?;
+            let settings: AppSettings = serde_json::from_str(&json_str)
+                .map_err(|e| PbError::Serialization(e.to_string()))?;
+            Ok(settings)
+        } else {
+            Ok(AppSettings::default())
+        }
+    }
+
+    pub fn save_settings(&self, settings: &AppSettings) -> PbResult<()> {
+        let conn = self.conn.lock().map_err(|_| PbError::Internal("Lock poisoned".into()))?;
+        let json_str = serde_json::to_string(settings)
+            .map_err(|e| PbError::Serialization(e.to_string()))?;
+
+        conn.execute(
+            "INSERT INTO app_settings (key, value) VALUES ('config', ?1)
+             ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            params![json_str],
+        )
+        .map_err(|e| PbError::Database(e.to_string()))?;
+        Ok(())
+    }
+
+    pub fn is_movie_notified(&self, slug: &str, episode: Option<&str>) -> PbResult<bool> {
+        let conn = self.conn.lock().map_err(|_| PbError::Internal("Lock poisoned".into()))?;
+        let mut stmt = conn
+            .prepare("SELECT last_episode FROM notified_movies WHERE movie_slug = ?1")
+            .map_err(|e| PbError::Database(e.to_string()))?;
+
+        let mut rows = stmt
+            .query(params![slug])
+            .map_err(|e| PbError::Database(e.to_string()))?;
+
+        if let Some(row) = rows.next().map_err(|e| PbError::Database(e.to_string()))? {
+            let last_ep: Option<String> = row.get(0).map_err(|e| PbError::Database(e.to_string()))?;
+            match (episode, last_ep.as_deref()) {
+                (Some(curr), Some(last)) => Ok(curr.trim() == last.trim()),
+                (Some(_), None) => Ok(false), // has episode now, but previously didn't have episode recorded
+                (None, _) => Ok(true), // already notified as a movie
+            }
+        } else {
+            Ok(false) // not notified yet
+        }
+    }
+
+    pub fn mark_movie_notified(&self, item: NotifiedMovie) -> PbResult<()> {
+        let conn = self.conn.lock().map_err(|_| PbError::Internal("Lock poisoned".into()))?;
+        let notified_str = item.notified_at.to_rfc3339();
+        conn.execute(
+            "INSERT INTO notified_movies (movie_slug, movie_name, last_episode, notified_at)
+             VALUES (?1, ?2, ?3, ?4)
+             ON CONFLICT(movie_slug) DO UPDATE SET
+                 movie_name = excluded.movie_name,
+                 last_episode = excluded.last_episode,
+                 notified_at = excluded.notified_at",
+            params![item.movie_slug, item.movie_name, item.last_episode, notified_str],
+        )
+        .map_err(|e| PbError::Database(e.to_string()))?;
+        Ok(())
+    }
+
+    pub fn get_notified_movies(&self, limit: u32) -> PbResult<Vec<NotifiedMovie>> {
+        let conn = self.conn.lock().map_err(|_| PbError::Internal("Lock poisoned".into()))?;
+        let mut stmt = conn
+            .prepare(
+                "SELECT movie_slug, movie_name, last_episode, notified_at
+                 FROM notified_movies
+                 ORDER BY notified_at DESC
+                 LIMIT ?1",
+            )
+            .map_err(|e| PbError::Database(e.to_string()))?;
+
+        let rows = stmt
+            .query_map(params![limit], |row| {
+                let time_str: String = row.get(3)?;
+                let notified_at = DateTime::parse_from_rfc3339(&time_str)
+                    .map(|dt| dt.with_timezone(&Utc))
+                    .unwrap_or_else(|_| Utc::now());
+
+                Ok(NotifiedMovie {
+                    movie_slug: row.get(0)?,
+                    movie_name: row.get(1)?,
+                    last_episode: row.get(2)?,
+                    notified_at,
+                })
+            })
+            .map_err(|e| PbError::Database(e.to_string()))?;
+
+        let mut items = Vec::new();
+        for item in rows {
+            items.push(item.map_err(|e| PbError::Database(e.to_string()))?);
+        }
+        Ok(items)
     }
 }
 

@@ -94,4 +94,82 @@ describe("Desktop Multilanguage (i18n) runtime", () => {
 		expect(m.reuse_list()).toBe("List");
 		expect(m.breadcrumb_home()).toBe("Home");
 	});
+
+	test("Settings page translations resolve across all 17 locales without English fallback", () => {
+		const settingsKeys = [
+			"sidebar_settings_title",
+			"sidebar_settings_tp",
+			"settings_title",
+			"settings_description",
+			"settings_system_group",
+			"settings_autostart_title",
+			"settings_autostart_desc",
+			"settings_tray_title",
+			"settings_tray_desc",
+			"settings_notification_group",
+			"settings_notify_title",
+			"settings_notify_desc",
+			"settings_scope_label",
+			"settings_scope_all",
+			"settings_scope_all_desc",
+			"settings_scope_fav",
+			"settings_scope_fav_desc",
+			"settings_interval_label",
+			"settings_interval_desc",
+			"settings_interval_15m",
+			"settings_interval_30m",
+			"settings_interval_1h",
+			"settings_interval_2h",
+			"settings_scan_btn",
+			"settings_scanning_btn",
+			"settings_scan_empty",
+			"settings_scan_error",
+			"settings_saved_status",
+			"settings_save_btn",
+			"settings_seo_title",
+			"settings_scan_hint",
+			"settings_language_group",
+			"settings_language_label",
+			"settings_language_desc"
+		];
+
+		// Baseline English values
+		setLocale("en", { reload: false });
+		const enValues: Record<string, string> = {};
+		for (const key of settingsKeys) {
+			expect(typeof m[key]).toBe("function");
+			enValues[key] = m[key]();
+			expect(enValues[key].length).toBeGreaterThan(0);
+		}
+
+		// Check Korean specific translations (from user issue)
+		setLocale("ko", { reload: false });
+		expect(m.sidebar_settings_title()).toBe("설정");
+		expect(m.sidebar_settings_tp()).toBe("앱 설정");
+		expect(m.settings_title()).toBe("앱 설정");
+		expect(m.sidebar_leaderboard_title()).toBe("리더보드");
+		expect(m.settings_scan_hint()).toBe("스캔 주기를 기다리지 않고 지금 바로 새 영화를 확인하세요");
+		expect(m.settings_language_group()).toBe("언어 및 화면 표시");
+		expect(m.settings_language_label()).toBe("표시 언어");
+
+		// Check all 17 locales
+		for (const loc of locales) {
+			setLocale(loc, { reload: false });
+			for (const key of settingsKeys) {
+				const val = m[key]();
+				expect(typeof val).toBe("string");
+				expect(val.length).toBeGreaterThan(0);
+				// For long descriptive phrases, non-English locales must NOT return the English value
+				if (loc !== "en" && (key === "settings_description" || key === "settings_system_group" || key === "settings_autostart_desc" || key === "settings_tray_desc")) {
+					expect(val).not.toBe(enValues[key]);
+				}
+			}
+
+			// Parametrized function
+			const foundVal = m.settings_scan_found({ count: 3 });
+			expect(typeof foundVal).toBe("string");
+			expect(foundVal).toContain("3");
+		}
+	});
 });
+

@@ -7,6 +7,7 @@
 	import { isPlaying } from '$lib/runes/movieStore.svelte';
 	import { deLocalizeUrl } from '$lib/paraglide/runtime';
 	import { setupGlobalOpener } from '$lib';
+	import { isTauri } from '$lib/ipc';
 	import { onMount } from 'svelte';
 
 	interface Props {
@@ -17,6 +18,14 @@
 
 	onMount(() => {
 		setupGlobalOpener();
+
+		if (isTauri()) {
+			import('@tauri-apps/api/event').then(({ listen }) => {
+				listen('movie-update', (event: any) => {
+					console.log('[Notification Event Received]:', event.payload);
+				});
+			});
+		}
 	});
 
 	let showNav = $derived(!isPlaying.value && !deLocalizeUrl(page.url).pathname.startsWith('/tim-kiem'));

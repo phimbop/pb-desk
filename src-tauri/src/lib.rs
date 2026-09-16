@@ -1,12 +1,16 @@
+pub mod tray;
+
 use pb_core::models::{FavoriteMovieItem, WatchHistoryItem};
 use pb_ipc::*;
 use pb_service::{
-    AuthService, FavoriteService, HistoryService, MovieApiClient, MovieService, SurrealClient,
+    AuthService, FavoriteService, HistoryService, MovieApiClient, MovieService, NotificationWorker,
+    SurrealClient,
 };
 use pb_storage::SqliteStorage;
 use std::fs;
 use std::sync::Arc;
-use tauri::{Manager, State};
+use tauri::{Emitter, Manager, State};
+use tauri_plugin_notification::NotificationExt;
 
 pub struct AppState {
     pub movie_service: MovieService,
@@ -14,6 +18,8 @@ pub struct AppState {
     pub favorite_service: FavoriteService,
     pub auth_service: AuthService,
     pub surreal_client: SurrealClient,
+    pub storage: Arc<SqliteStorage>,
+    pub notification_worker: NotificationWorker,
 }
 
 #[tauri::command]
@@ -319,10 +325,87 @@ async fn get_user_watch_stats(
         .map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+fn get_app_settings(state: State<'_, AppState>) -> Result<IpcAppSettings, String> {
+    state
+        .storage
+        .get_settings()
+        .map(Into::into)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn save_app_settings(state: State<'_, AppState>, settings: IpcAppSettings) -> Result<(), String> {
+    state
+        .storage
+        .save_settings(&settings.into())
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn check_for_movie_updates(
+    state: State<'_, AppState>,
+    app: tauri::AppHandle,
+) -> Result<Vec<IpcMovieUpdateEvent>, String> {
+    trigger_manual_check(&app, &state).await
+}
+
+pub async fn trigger_manual_check(
+    app: &tauri::AppHandle,
+    state: &AppState,
+) -> Result<Vec<IpcMovieUpdateEvent>, String> {
+    let updates = state
+        .notification_worker
+        .check_for_updates()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    for ev in &updates {
+        let title = if ev.is_new_movie {
+            "🎬 PHIMBOP - Phim mới cập nhật!".to_string()
+        } else {
+            format!("🔥 Tập mới: {}", ev.movie_name)
+        };
+        let body = if let Some(ref ep) = ev.episode {
+            format!("{} vừa cập nhật {}!", ev.movie_name, ep)
+        } else {
+            format!("{} đã có mặt trên PHIMBOP!", ev.movie_name)
+        };
+
+        let _ = app
+            .notification()
+            .builder()
+            .title(&title)
+            .body(&body)
+            .show();
+
+        let ipc_ev: IpcMovieUpdateEvent = ev.clone().into();
+        let _ = app.emit("movie-update", &ipc_ev);
+    }
+
+    Ok(updates.into_iter().map(Into::into).collect())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            Some(vec!["--minimized"]),
+        ))
+        .plugin(tauri_plugin_notification::init())
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                if let Some(state) = window.try_state::<AppState>() {
+                    let settings = state.storage.get_settings().unwrap_or_default();
+                    if settings.minimize_to_tray {
+                        api.prevent_close();
+                        let _ = window.hide();
+                    }
+                }
+            }
+        })
         .setup(|app| {
             let app_data_dir = app
                 .path()
@@ -339,11 +422,67 @@ pub fn run() {
             );
 
             let api_client = MovieApiClient::new();
-            let movie_service = MovieService::new(api_client, Arc::clone(&storage) as _);
+            let movie_service = MovieService::new(api_client.clone(), Arc::clone(&storage) as _);
             let history_service = HistoryService::new(Arc::clone(&storage) as _);
             let favorite_service = FavoriteService::new(Arc::clone(&storage) as _);
             let surreal_client = SurrealClient::new();
             let auth_service = AuthService::new(surreal_client.clone());
+            let notification_worker = NotificationWorker::new(Arc::clone(&storage), api_client);
+
+            // Setup System Tray
+            let _ = tray::setup_tray(app.handle());
+
+            // Check if launched with --minimized flag (e.g. from Autostart)
+            let args: Vec<String> = std::env::args().collect();
+            if args.iter().any(|a| a == "--minimized") {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.hide();
+                }
+            }
+
+            // Spawn background polling loop
+            let app_handle = app.handle().clone();
+            let storage_for_loop = Arc::clone(&storage);
+            let worker_for_loop = notification_worker.clone();
+            tauri::async_runtime::spawn(async move {
+                tokio::time::sleep(tokio::time::Duration::from_secs(15)).await;
+                loop {
+                    let settings = storage_for_loop.get_settings().unwrap_or_default();
+                    if settings.notify_new_movies {
+                        if let Ok(updates) = worker_for_loop.check_for_updates().await {
+                            for ev in updates {
+                                let title = if ev.is_new_movie {
+                                    "🎬 PHIMBOP - Phim mới cập nhật!".to_string()
+                                } else {
+                                    format!("🔥 Tập mới: {}", ev.movie_name)
+                                };
+                                let body = if let Some(ref ep) = ev.episode {
+                                    format!("{} vừa cập nhật {}!", ev.movie_name, ep)
+                                } else {
+                                    format!("{} đã có mặt trên PHIMBOP!", ev.movie_name)
+                                };
+
+                                let _ = app_handle
+                                    .notification()
+                                    .builder()
+                                    .title(&title)
+                                    .body(&body)
+                                    .show();
+
+                                let ipc_ev: IpcMovieUpdateEvent = ev.into();
+                                let _ = app_handle.emit("movie-update", &ipc_ev);
+                            }
+                        }
+                    }
+
+                    let interval_mins = storage_for_loop
+                        .get_settings()
+                        .map(|s| s.check_interval_mins)
+                        .unwrap_or(15)
+                        .max(5);
+                    tokio::time::sleep(tokio::time::Duration::from_secs(interval_mins as u64 * 60)).await;
+                }
+            });
 
             app.manage(AppState {
                 movie_service,
@@ -351,6 +490,8 @@ pub fn run() {
                 favorite_service,
                 auth_service,
                 surreal_client,
+                storage,
+                notification_worker,
             });
 
             Ok(())
@@ -379,6 +520,9 @@ pub fn run() {
             auth_logout,
             forward_api,
             get_user_watch_stats,
+            get_app_settings,
+            save_app_settings,
+            check_for_movie_updates,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

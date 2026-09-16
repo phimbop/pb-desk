@@ -35,9 +35,22 @@ pub fn initialize_schema(conn: &Connection) -> Result<(), rusqlite::Error> {
             expires_at INTEGER NOT NULL
         );
 
+        CREATE TABLE IF NOT EXISTS notified_movies (
+            movie_slug TEXT PRIMARY KEY,
+            movie_name TEXT NOT NULL,
+            last_episode TEXT,
+            notified_at TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS app_settings (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        );
+
         CREATE INDEX IF NOT EXISTS idx_watch_history_updated ON watch_history(updated_at DESC);
         CREATE INDEX IF NOT EXISTS idx_favorites_created ON favorites(created_at DESC);
         CREATE INDEX IF NOT EXISTS idx_cache_expires ON cache(expires_at);
+        CREATE INDEX IF NOT EXISTS idx_notified_movies_time ON notified_movies(notified_at DESC);
         "
     )?;
     Ok(())

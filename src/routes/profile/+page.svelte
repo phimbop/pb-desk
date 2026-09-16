@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
+	import { localizeHref } from '$lib/paraglide/runtime';
 	import { fade } from 'svelte/transition';
 	import { getUserRole } from '$lib/utils/rank';
 	import type { AuthUser, WatchStats } from '$lib/types';
@@ -244,6 +245,27 @@
 						</div>
 					</div>
 				{/if}
+
+				<!-- Desktop App Settings Section -->
+				<div class="rounded-2xl border border-white/5 bg-slate-900/30 backdrop-blur-md p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+					<div class="space-y-1">
+						<h3 class="text-sm font-bold text-white flex items-center gap-2">
+							<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-neonPink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+								<path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z" />
+								<path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
+							</svg>
+							{m.settings_title()}
+						</h3>
+						<p class="text-xs text-slate-400">{m.settings_description()}</p>
+					</div>
+					<a
+						href={localizeHref('/settings')}
+						class="shrink-0 px-5 py-2 rounded-full bg-gradient-to-r from-neonPink-600 to-neonPink-500 hover:from-neonPink-500 hover:to-neonPink-400 text-white text-xs font-semibold transition-all active:scale-95 shadow-lg shadow-neonPink-500/20 text-center"
+					>
+						{m.sidebar_settings_title()}
+					</a>
+				</div>
 			{/if}
 		</div>
 	</div>
