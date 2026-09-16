@@ -1,22 +1,27 @@
 {
-  "sessionId": "d1464ee7-6b98-41d4-8496-8a5c8eb33b6c",
-  "title": "Localize Privacy Policy page for all 17 languages in pb-desk",
+  "sessionId": "285e3133-4fb0-4d9c-9410-6a3bd1160cf9",
+  "title": "Create multi-platform GitHub Action build workflow for macOS, Linux, and Windows with popular formats",
   "requirements": [
     {
       "id": "R1",
-      "description": "Implement comprehensive multilingual translations for the Privacy Policy page across all 17 supported locales (en, vi, zh, ja, ko, fr, de, es, ru, id, tr, it, pt, hi, pl, nl, be) with dynamic language binding from getLocale()",
-      "checks": ["privacy-multilingual-tests"]
+      "description": "Create .github/workflows/release.yml supporting multiplatform builds across macOS (DMG), Linux (AppImage, DEB), and Windows (NSIS .exe, MSI)",
+      "checks": ["ci-workflow-tests"]
     },
     {
       "id": "R2",
-      "description": "Update src/routes/privacy-policy/+page.svelte to bind reactively to the active locale without hardcoded Vietnamese text while maintaining 100% visual layout parity with web pbv5",
-      "checks": ["privacy-multilingual-tests"]
+      "description": "Configure build matrix and prerequisites for all 3 OS platforms including Bun runtime, Rust toolchain, Linux WebKitGTK 4.1 and mold linker dependencies, and Tauri Action",
+      "checks": ["ci-workflow-tests"]
+    },
+    {
+      "id": "R3",
+      "description": "Verify workflow YAML validity, matrix coverage, popular format artifacts, and passing test suites in scripts/agent/ci_workflow.test.ts",
+      "checks": ["ci-workflow-tests"]
     }
   ],
   "checks": [
     {
-      "id": "privacy-multilingual-tests",
-      "command": ["bun", "test", "scripts/agent/privacy.test.ts"],
+      "id": "ci-workflow-tests",
+      "command": ["bun", "test", "scripts/agent/ci_workflow.test.ts"],
       "timeoutMs": 120000,
       "testFormat": "bun"
     }

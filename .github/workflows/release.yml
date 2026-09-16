@@ -1,0 +1,118 @@
+name: Release & Multi-Platform Build
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      release_draft:
+        description: 'Create draft release'
+        required: false
+        type: boolean
+        default: true
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-release:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # macOS Apple Silicon (M1/M2/M3/M4) -> .dmg
+          - platform: macos-latest
+            target: aarch64-apple-darwin
+            args: '--target aarch64-apple-darwin'
+            name: macos-arm64
+          # macOS Intel (x86_64) -> .dmg
+          - platform: macos-latest
+            target: x86_64-apple-darwin
+            args: '--target x86_64-apple-darwin'
+            name: macos-x86_64
+          # Linux Ubuntu (x86_64) -> .AppImage, .deb
+          - platform: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            args: ''
+            name: linux-x86_64
+          # Windows (x86_64) -> .exe (NSIS installer), .msi
+          - platform: windows-latest
+            target: x86_64-pc-windows-msvc
+            args: ''
+            name: windows-x86_64
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun runtime
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Rust Cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            .
+            src-tauri
+          key: ${{ matrix.target }}
+
+      - name: Install Linux dependencies (WebKitGTK, RSVG, Mold linker)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            xdg-utils \
+            clang \
+            mold
+
+      - name: Install frontend dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build Tauri Application & Create Release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: ${{ github.ref_type == 'tag' && github.ref_name || 'v__VERSION__' }}
+          releaseName: 'PHIMBOP v__VERSION__'
+          releaseBody: |
+            ## PHIMBOP Desktop v__VERSION__
+            
+            Ứng dụng xem phim desktop đa nền tảng.
+            
+            ### Các định dạng phát hành:
+            - **Windows**: `PHIMBOP_*_x64-setup.exe` (NSIS Installer) & `PHIMBOP_*_x64_en-US.msi`
+            - **macOS**: `PHIMBOP_*_aarch64.dmg` (Apple Silicon M-series) & `PHIMBOP_*_x64.dmg` (Intel)
+            - **Linux**: `PHIMBOP_*_amd64.AppImage` (Portable) & `PHIMBOP_*_amd64.deb` (Debian/Ubuntu)
+          releaseDraft: ${{ github.event.inputs.release_draft != 'false' }}
+          prerelease: false
+          args: ${{ matrix.args }}
+
+      - name: Upload build artifacts (CI backup)
+        uses: actions/upload-artifact@v4
+        with:
+          name: phimbop-${{ matrix.name }}-bundles
+          path: |
+            src-tauri/target/${{ matrix.target }}/release/bundle/
+            src-tauri/target/release/bundle/
+          if-no-files-found: ignore
+          retention-days: 14
