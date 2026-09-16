@@ -1,0 +1,49 @@
+{
+	"name": "pb-desk",
+	"private": true,
+	"version": "0.1.0",
+	"type": "module",
+	"scripts": {
+		"agent:run": "bun --no-env-file run scripts/agent/run.ts",
+		"agent:verify": "bun --no-env-file run scripts/agent/verify.ts",
+		"agent:eval": "bun test scripts/agent",
+		"agent:typecheck": "tsc -p scripts/agent/tsconfig.json",
+		"agent:install": "bun --no-env-file run scripts/agent/install.ts",
+		"dev": "vite dev",
+		"build": "vite build",
+		"preview": "vite preview",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"tauri": "tauri"
+	},
+	"devDependencies": {
+		"@sveltejs/adapter-static": "^3.0.8",
+		"@sveltejs/kit": "^2.16.1",
+		"@sveltejs/vite-plugin-svelte": "^5.0.3",
+		"@tailwindcss/forms": "^0.5.10",
+		"@tailwindcss/vite": "^4.0.9",
+		"@tauri-apps/cli": "^2.2.7",
+		"@types/bun": "^1.4.2",
+		"@types/node": "^22.13.5",
+		"svelte": "^5.20.2",
+		"svelte-check": "^4.1.4",
+		"tailwindcss": "^4.0.9",
+		"tailwindcss-animate": "^1.0.7",
+		"typescript": "^5.7.3",
+		"vite": "^6.1.1"
+	},
+	"dependencies": {
+		"@supabase/supabase-js": "^2.116.0",
+		"@tauri-apps/api": "^2.2.0",
+		"@tauri-apps/plugin-opener": "^2.2.5",
+		"clsx": "^2.1.1",
+		"embla-carousel": "^8.6.0",
+		"embla-carousel-autoplay": "^8.6.0",
+		"hls.js": "^1.5.20",
+		"media-icons": "^1.1.5",
+		"runed": "^0.37.1",
+		"schema-dts": "^2.0.0",
+		"slugify": "^1.6.9",
+		"tailwind-merge": "^3.0.1",
+		"vidstack": "^1.12.13"
+	}
+}

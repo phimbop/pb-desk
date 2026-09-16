@@ -1,0 +1,34 @@
+{
+  "sessionId": "harness-installation-2026-09-15",
+  "title": "Install command evidence runner and AGY driver with regression evals",
+  "requirements": [
+    {
+      "id": "R1",
+      "description": "Real command failures, missing tests and stale or modified evidence cannot pass",
+      "checks": ["harness-acceptance"]
+    },
+    {
+      "id": "R2",
+      "description": "Task requirements reference executable acceptance checks without replacing base gates",
+      "checks": ["harness-acceptance"]
+    },
+    {
+      "id": "R3",
+      "description": "Hook protocol decisions are bounded and workspace scoped; driver rejects unsupported completion claims independently of native hooks",
+      "checks": ["harness-acceptance"]
+    },
+    {
+      "id": "R4",
+      "description": "Installer preserves unrelated hooks and supports removal",
+      "checks": ["harness-acceptance"]
+    }
+  ],
+  "checks": [
+    {
+      "id": "harness-acceptance",
+      "command": ["bun", "test", "scripts/agent"],
+      "timeoutMs": 120000,
+      "testFormat": "bun"
+    }
+  ]
+}

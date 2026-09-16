@@ -1,0 +1,36 @@
+# PhimBop
+
+> PhimBop là nền tảng xem phim trực tuyến hiện đại, chất lượng cao (4K, Full HD 1080p), hỗ trợ đa ngôn ngữ (17 ngôn ngữ), phụ đề Vietsub và thuyết minh. Nền tảng tổng hợp dữ liệu phim chiếu rạp, phim lẻ, phim bộ, hoạt hình anime và thông tin diễn viên toàn cầu từ các nguồn dữ liệu điện ảnh lớn (TMDB, OPhim, KKPhim).
+
+PhimBop is a modern online cinema and entertainment streaming discovery platform providing high-quality streaming (4K / 1080p), Vietsub subtitles, dubbed audio, multi-language UI, and extensive filmography metadata.
+
+## Complete Guide & Details
+- [Full LLM Documentation](https://phimbop.top/llms-full.txt): Toàn bộ tài liệu chi tiết về kiến trúc dữ liệu, sơ đồ đường dẫn URL, danh mục thể loại và hướng dẫn tích hợp AI cho PhimBop.
+
+## Main Navigation & Core Pages
+- [Trang Chủ / Homepage](https://phimbop.top/): Trang chủ hiển thị phim đề cử, phim thịnh hành (Trending), phim bộ hot và phim mới phát hành.
+- [Phim Mới](https://phimbop.top/phim-moi): Danh sách phim điện ảnh và truyền hình mới cập nhật liên tục theo ngày.
+- [Phim Lẻ](https://phimbop.top/phim-le): Tuyển tập phim lẻ, phim chiếu rạp bom tấn Hollywood, Hàn Quốc, Trung Quốc, Việt Nam.
+- [Phim Bộ](https://phimbop.top/phim-bo): Phim bộ dài tập, drama, K-drama, C-drama, US-UK series cập nhật tập mới nhanh nhất.
+- [Phim Hoạt Hình](https://phimbop.top/phim-hoat-hinh): Kho anime Nhật Bản, phim hoạt hình 3D, hoạt hình chiếu rạp chất lượng cao.
+- [Bảng Xếp Hạng](https://phimbop.top/bang-xep-hang): Xếp hạng phim xem nhiều nhất theo ngày, tuần, tháng và đánh giá điểm cao từ cộng đồng.
+- [Tìm Kiếm Phim](https://phimbop.top/tim-kiem/phim): Công cụ tìm kiếm phim tức thì theo tên phim tiếng Việt hoặc tên gốc quốc tế.
+
+## URL Schema for AI Agents
+- Tìm kiếm phim: `https://phimbop.top/tim-kiem/phim?q={query}`
+- Chi tiết phim điện ảnh quốc tế (TMDB): `https://phimbop.top/phim/{tmdb_id}`
+- Chi tiết phim truyền hình quốc tế (TMDB): `https://phimbop.top/tv/{tmdb_id}`
+- Chi tiết phim lẻ châu Á / nguồn KKPhim: `https://phimbop.top/phim-le/{slug}`
+- Chi tiết phim bộ châu Á: `https://phimbop.top/phim-bo/{slug}`
+- Thông tin diễn viên / đạo diễn: `https://phimbop.top/dien-vien/{actor_name_slug}/{actor_id}`
+
+## Information & Legal
+- [Giới thiệu PhimBop](https://phimbop.top/gioi-thieu): Thông tin về nền tảng, công nghệ và kênh liên hệ chính thức.
+- [Hướng dẫn sử dụng](https://phimbop.top/gioi-thieu/huong-dan-su-dung-phimbop): Hướng dẫn phím tắt bàn phím player, danh sách xem sau và tính năng phát video.
+- [Chính sách bảo mật](https://phimbop.top/privacy-policy): Quy định thu thập, bảo vệ thông tin cá nhân người dùng.
+- [Điều khoản dịch vụ](https://phimbop.top/term-of-service): Điều khoản và quy ước sử dụng dịch vụ xem phim trực tuyến.
+- [Tuyên bố miễn trừ trách nhiệm](https://phimbop.top/disclaimer): Tuyên bố bản quyền và miễn trừ trách nhiệm pháp lý.
+
+## Community & Support
+- [Telegram Community](https://t.me/phimbop_group): Kênh thảo luận và hỗ trợ cộng đồng người xem phim.
+- [X (Twitter)](https://x.com/phimbop_xyz): Kênh cập nhật tin tức và thông báo tên miền mới nhất.

@@ -1,0 +1,21 @@
+# PhimBop
+> Nền tảng trực tuyến cung cấp thông tin và cập nhật phim mới, bao gồm phim Âu Mỹ, phim Việt Nam, phim chiếu rạp, phim 18+, phim hành động, phim tình cảm, phim hài, và phim vietsub.
+
+## Static Pages
+- [Giới thiệu](https://phimbop.top/gioi-thieu): Trang giới thiệu về PhimBop, thông tin cập nhật tên miền và liên hệ.
+- [Hướng dẫn sử dụng](https://phimbop.top/gioi-thieu/huong-dan-su-dung-phimbop): Hướng dẫn các phím tắt trình phát video, cách tìm kiếm phim và quản lý danh sách yêu thích.
+- [Chính sách bảo mật](https://phimbop.top/privacy-policy): Thông tin về cách thu thập, sử dụng và bảo vệ thông tin cá nhân của người dùng.
+- [Điều khoản dịch vụ](https://phimbop.top/term-of-service): Các quy định và điều khoản khi sử dụng dịch vụ của PhimBop.
+- [Tuyên bố miễn trừ trách nhiệm](https://phimbop.top/disclaimer): Tuyên bố miễn trừ trách nhiệm pháp lý về nội dung được cung cấp trên trang web.
+
+## Categories & Navigation
+- [Phim Mới](https://phimbop.top/phim-moi): Danh sách các phim mới cập nhật liên tục.
+- [Phim Lẻ](https://phimbop.top/phim-le): Phim lẻ chiếu rạp, phim lẻ cập nhật mới nhất.
+- [Phim Bộ](https://phimbop.top/phim-bo): Phim bộ dài tập từ nhiều quốc gia.
+- [Phim Hoạt Hình](https://phimbop.top/phim-hoat-hinh): Các bộ phim hoạt hình hấp dẫn.
+- [Bảng Xếp Hạng](https://phimbop.top/bang-xep-hang): Bảng xếp hạng phim được xem nhiều nhất.
+- [Tìm Kiếm](https://phimbop.top/tim-kiem/phim): Trang tìm kiếm phim theo từ khóa.
+
+## Contact & Socials
+- [Telegram Support Group](https://t.me/phimbop_group): Nhóm hỗ trợ cộng đồng trên Telegram.
+- [X (Twitter)](https://x.com/phimbop_xyz): Trang mạng xã hội chính thức trên X.

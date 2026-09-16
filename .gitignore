@@ -1,0 +1,36 @@
+# Rust / Cargo
+target/
+**/target/
+Cargo.lock
+
+# Node / Frontend
+node_modules/
+.svelte-kit/
+build/
+dist/
+.env
+.env.*
+!.env.example
+
+# Tauri
+src-tauri/target/
+
+# Test / QA / Agent logs & evidence
+*.log
+.agent-evidence/
+playwright-report/
+test-results/
+
+# OS & Editors
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+
+# CodeGraph (local index is ignored via .codegraph/.gitignore)
+.codegraph/*
+!.codegraph/.gitignore

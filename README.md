@@ -1,0 +1,81 @@
+# PHIMBOP Desktop (pb-desk)
+
+> Ứng dụng Desktop xem phim chất lượng cao được xây dựng dựa trên phiên bản web **PHIMBOP** (`pbv5`), sử dụng **Tauri v2**, **Rust** (kiến trúc đa-crate Zed-style), và **Svelte 5** (Runes).
+
+---
+
+## 1. Kiến trúc hệ thống (Zed-Style Modular Architecture)
+
+Dự án áp dụng mô hình phân tách crate độc lập theo chuẩn của **Zed Editor**, tối ưu hóa tốc độ biên dịch (kết hợp linker siêu tốc `mold`), bảo đảm logic nghiệp vụ không phụ thuộc vào GUI hay Tauri:
+
+```text
+pb-desk/
+├── .cargo/
+│   └── config.toml                  # Linker mold và tối ưu hóa cờ biên dịch Linux
+├── .codegraph/                      # CodeGraph AST SQLite index
+├── crates/                          # Các Rust crate độc lập
+│   ├── pb_core/                     # Entity miền, trait kho lưu trữ, mã lỗi PbError (KHÔNG phụ thuộc Tauri)
+│   ├── pb_storage/                  # SQLite storage (lịch sử xem, phim yêu thích, cache TTL)
+│   ├── pb_service/                  # Client kết nối API phim, đồng bộ dữ liệu, cache layer
+│   └── pb_ipc/                      # DTOs, schemas truyền tải dữ liệu giữa Rust và Frontend
+├── src-tauri/                       # Desktop shell mỏng (Tauri v2)
+│   ├── capabilities/default.json    # Phân quyền bảo mật granular (không dùng wildcard)
+│   ├── src/lib.rs                   # Đăng ký lệnh IPC và quản lý AppState
+│   ├── src/main.rs                  # Entrypoint ứng dụng desktop
+│   └── tauri.conf.json              # Cấu hình cửa sổ, CSP, dead-code elimination
+├── src/                             # Svelte 5 / SvelteKit Frontend (SPA mode)
+│   ├── lib/
+│   │   ├── components/              # Sidebar, Nav, CardMovie, Player (HLS), Pagination...
+│   │   ├── stores/                  # Reactive State với Svelte 5 Runes ($state, $derived)
+│   │   └── ipc.ts                   # Cầu nối gọi lệnh Tauri IPC (hỗ trợ fallback trình duyệt)
+│   └── routes/                      # Các trang: Trang chủ, Phim bộ, Phim lẻ, Tìm kiếm, Lịch sử...
+├── Cargo.toml                       # Cargo workspace quản lý thống nhất phiên bản
+└── package.json                     # Quản lý thư viện frontend (Bun / Vite / Tailwind v4)
+```
+
+---
+
+## 2. Tính năng nổi bật & Giao diện chuẩn PBv5
+
+- **Giữ trọn vẹn Theme & Giao diện**: Tông màu `neonPink` đặc trưng (`#ff1493`), nền tối `neutral-950` với hiệu ứng gradient huyền ảo, font chữ Nunito tiếng Việt.
+- **Trình chiếu phim HLS thông minh**:
+  - Hỗ trợ m3u8 stream trực tiếp với `hls.js`, tự động chọn server và tập tiếp theo.
+  - Chế độ rạp chiếu (Cinema Mode): tự động thu gọn thanh điều hướng khi phát phim.
+  - Tự động ghi nhớ mốc thời gian đã xem và lưu cục bộ vào SQLite.
+- **Lưu trữ cục bộ với SQLite (`pb_storage`)**:
+  - Lịch sử xem phim: tiến độ %, mốc giây, tập đang xem.
+  - Phim yêu thích: đánh dấu xem sau nhanh chóng.
+  - Bộ nhớ đệm (Cache TTL): giảm thiểu gọi API trùng lặp, phản hồi tức thì.
+- **Phân loại phim phong phú**:
+  - Phim mới cập nhật, Phim bộ tuyển chọn, Phim lẻ bom tấn, Hoạt hình Anime, Phim tình cảm, Phim 18+.
+  - Bảng xếp hạng phim xem nhiều.
+  - Tìm kiếm thông minh theo từ khóa.
+
+---
+
+## 3. Hướng dẫn cài đặt & Khởi chạy
+
+### Yêu cầu hệ thống:
+- Rust & Cargo (1.80+)
+- Bun (1.0+) hoặc Node.js (v20+)
+- Linker `mold` và `clang` (tùy chọn trên Linux để tăng tốc biên dịch)
+
+### Lệnh thực thi:
+
+```bash
+# 1. Cài đặt thư viện frontend
+bun install
+
+# 2. Khởi chạy ứng dụng Desktop (Tauri dev mode)
+bun run tauri dev
+
+# 3. Kiểm tra mã nguồn Rust & Clippy
+cargo clippy --workspace -- -D warnings
+cargo test --workspace
+
+# 4. Kiểm tra mã nguồn Svelte 5
+bun run check
+
+# 5. Đóng gói ứng dụng Desktop
+bun run tauri build
+```

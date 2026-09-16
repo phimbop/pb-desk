@@ -1,0 +1,13 @@
+# Fast linker configuration for accelerated Rust compilation (Zed Editor style)
+# mold reduces linking time by up to 5-10x on Linux x86_64 systems
+
+[target.x86_64-unknown-linux-gnu]
+linker = "clang"
+rustflags = [
+    "-C", "link-arg=-fuse-ld=mold",
+    "-C", "split-debuginfo=unpacked",
+]
+
+[build]
+# Dedicated target directory option if needed or incremental build acceleration
+incremental = true
