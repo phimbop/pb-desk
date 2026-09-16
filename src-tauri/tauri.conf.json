@@ -42,6 +42,12 @@
     ]
   },
   "plugins": {
-    "opener": {}
+    "opener": {},
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDVBMzc1OEZCRDE2NDI1MzQKUlVRZ0hBbnlQcE51LzcxR3k2UjkvL09uNmpWNGJmSUt2MDFGSmhKRHh4clZ2b2V1ZjlZcFB4czgK",
+      "endpoints": [
+        "https://nhxgdsanykpnmghtohfz.supabase.co/functions/v1/app-update?target={{target}}&current_version={{current_version}}"
+      ]
+    }
   }
 }

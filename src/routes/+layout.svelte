@@ -4,6 +4,7 @@
 	import Sidebar from '$lib/Components/Sidebar/Sidebar.svelte';
 	import Nav from '$lib/Components/Header/Nav.svelte';
 	import LoadingSubBlur from '$lib/Components/LoadingSubBlur.svelte';
+	import UpdateModal from '$lib/Components/Modal/UpdateModal.svelte';
 	import { isPlaying } from '$lib/runes/movieStore.svelte';
 	import { deLocalizeUrl } from '$lib/paraglide/runtime';
 	import { setupGlobalOpener } from '$lib';
@@ -25,6 +26,13 @@
 					console.log('[Notification Event Received]:', event.payload);
 				});
 			});
+
+			// Tự động kiểm tra bản cập nhật mới trong nền sau khi mở ứng dụng 3 giây
+			setTimeout(() => {
+				import('$lib/services/updater.svelte').then(({ updater }) => {
+					updater.checkForUpdates(false);
+				});
+			}, 3000);
 		}
 	});
 
@@ -62,3 +70,5 @@
 		</div>
 	</div>
 </div>
+
+<UpdateModal />

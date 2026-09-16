@@ -37,6 +37,8 @@
 		"@tauri-apps/plugin-autostart": "^2.5.1",
 		"@tauri-apps/plugin-notification": "^2.4.0",
 		"@tauri-apps/plugin-opener": "^2.2.5",
+		"@tauri-apps/plugin-process": "^2.3.1",
+		"@tauri-apps/plugin-updater": "^2.11.0",
 		"clsx": "^2.1.1",
 		"embla-carousel": "^8.6.0",
 		"embla-carousel-autoplay": "^8.6.0",

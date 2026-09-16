@@ -22,6 +22,8 @@ tauri-build = { version = "2.0" }
 tauri-plugin-opener = "2.2"
 tauri-plugin-autostart = "2"
 tauri-plugin-notification = "2"
+tauri-plugin-updater = "2"
+tauri-plugin-process = "2"
 redis = { version = "1.7.0", default-features = false, features = ["tokio-comp", "aio"] }
 
 # Internal Workspace Crates

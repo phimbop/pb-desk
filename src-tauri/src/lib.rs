@@ -395,6 +395,8 @@ pub fn run() {
             Some(vec!["--minimized"]),
         ))
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 if let Some(state) = window.try_state::<AppState>() {

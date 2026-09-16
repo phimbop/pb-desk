@@ -18,6 +18,8 @@
     "core:window:allow-set-fullscreen",
     "core:window:allow-toggle-maximize",
     "autostart:default",
-    "notification:default"
+    "notification:default",
+    "updater:default",
+    "process:default"
   ]
 }

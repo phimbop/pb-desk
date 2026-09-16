@@ -1,44 +1,29 @@
 {
-  "sessionId": "c216e95c-2bf9-48b4-9ba4-4c93149024e8",
-  "title": "Merge About and Settings into unified /settings layout with subpages and update sidebar",
+  "sessionId": "bbb2f194-1484-4d0a-8414-4e5d6e7bad07",
+  "title": "Triển khai giải pháp quản lý và cập nhật phiên bản tự động bằng Supabase và Tauri v2 Updater",
   "requirements": [
     {
       "id": "R1",
-      "description": "Sidebar: Remove Giới thiệu icon from appbar/sidebar, retain Settings icon pointing to /settings, and update menu-bg slider positions",
-      "checks": ["settings-merge-tests"]
+      "description": "Supabase Schema & Edge Function: Thiết lập migration SQL bảng app_versions với RLS policy và Deno Edge Function chuẩn endpoint Tauri v2",
+      "checks": ["updater-contract-test"]
     },
     {
       "id": "R2",
-      "description": "Settings Drawer Layout: Migrate drawer layout from gioi-thieu to src/routes/settings/+layout.svelte with 3 items in order: Cài đặt (/settings), Về chúng tôi (/settings/about), and Tài liệu (/settings/docs)",
-      "checks": ["settings-merge-tests", "frontend-typecheck"]
+      "description": "Tauri v2 Backend: Tích hợp tauri-plugin-updater và tauri-plugin-process vào Cargo workspace, capabilities và tauri.conf.json",
+      "checks": ["updater-contract-test"]
     },
     {
       "id": "R3",
-      "description": "Pages Migration: Move settings UI into src/routes/settings/+page.svelte, about UI into src/routes/settings/about/+page.svelte, and docs UI into src/routes/settings/docs/+page.svelte",
-      "checks": ["settings-merge-tests", "frontend-typecheck", "frontend-build-check"]
-    },
-    {
-      "id": "R4",
-      "description": "Link & Legacy Migration: Update old links across the app (Footer, UserMenu, Profile) to new /settings paths and ensure backward compatibility / redirects",
-      "checks": ["settings-merge-tests", "frontend-typecheck", "frontend-build-check"]
+      "description": "Frontend Svelte 5 UI & Service: Xây dựng reactive updater service, UpdateModal hiển thị thông tin cập nhật / tiến độ tải / force update, và nút kiểm tra cập nhật trong cài đặt",
+      "checks": ["updater-contract-test"]
     }
   ],
   "checks": [
     {
-      "id": "settings-merge-tests",
-      "command": ["bun", "test", "scripts/agent/settings_merge.test.ts"],
+      "id": "updater-contract-test",
+      "command": ["bun", "test", "scripts/agent/updater.test.ts"],
       "testFormat": "bun",
       "timeoutMs": 60000
-    },
-    {
-      "id": "frontend-typecheck",
-      "command": ["bun", "run", "check"],
-      "timeoutMs": 180000
-    },
-    {
-      "id": "frontend-build-check",
-      "command": ["bun", "run", "build"],
-      "timeoutMs": 300000
     }
   ]
 }

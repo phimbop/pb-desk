@@ -1,0 +1,257 @@
+import { isTauri } from '$lib/ipc';
+import { getSupabase } from '$lib/services/supabase';
+
+export interface UpdateInfo {
+	version: string;
+	currentVersion: string;
+	releaseNotes: string;
+	pubDate?: string;
+	isCritical: boolean;
+	minSupportedVersion?: string;
+}
+
+export type UpdateStatus =
+	| 'idle'
+	| 'checking'
+	| 'available'
+	| 'downloading'
+	| 'downloaded'
+	| 'up-to-date'
+	| 'error';
+
+class UpdaterService {
+	status = $state<UpdateStatus>('idle');
+	updateInfo = $state<UpdateInfo | null>(null);
+	progress = $state<number>(0);
+	downloadedBytes = $state<number>(0);
+	totalBytes = $state<number>(0);
+	error = $state<string | null>(null);
+	modalOpen = $state<boolean>(false);
+
+	// Lưu instance Tauri Update đang hoạt động
+	private activeUpdate: any = null;
+
+	/**
+	 * Kiểm tra xem phiên bản hiện tại có thấp hơn phiên bản yêu cầu không
+	 */
+	private isVersionLower(current: string, target: string): boolean {
+		const clean = (v: string) => v.replace(/^v/, '').split('-')[0];
+		const cParts = clean(current).split('.').map((n) => parseInt(n, 10) || 0);
+		const tParts = clean(target).split('.').map((n) => parseInt(n, 10) || 0);
+		for (let i = 0; i < Math.max(cParts.length, tParts.length); i++) {
+			const c = cParts[i] || 0;
+			const t = tParts[i] || 0;
+			if (c < t) return true;
+			if (c > t) return false;
+		}
+		return false;
+	}
+
+	/**
+	 * Kiểm tra bản cập nhật mới từ Supabase & Tauri v2 Updater
+	 * @param manual Nếu là true (người dùng bấm nút kiểm tra), sẽ luôn mở thông báo kết quả
+	 */
+	async checkForUpdates(manual: boolean = false): Promise<boolean> {
+		if (this.status === 'checking' || this.status === 'downloading') {
+			return false;
+		}
+
+		this.status = 'checking';
+		this.error = null;
+		this.progress = 0;
+
+		try {
+			if (!isTauri()) {
+				// Môi trường Web browser / Dev mode: Kiểm tra trực tiếp qua Supabase Client
+				return await this.checkViaSupabaseWeb(manual);
+			}
+
+			// Môi trường Desktop (Tauri v2)
+			const { check } = await import('@tauri-apps/plugin-updater');
+			const update = await check();
+
+			if (update && update.available) {
+				this.activeUpdate = update;
+
+				// Kiểm tra thêm thông tin phụ từ Supabase (is_critical, min_supported_version)
+				let isCritical = false;
+				let minSupportedVersion: string | undefined;
+
+				try {
+					const supabase = getSupabase();
+					if (supabase) {
+						const { data } = await supabase
+							.from('app_versions')
+							.select('is_critical, min_supported_version')
+							.eq('version', update.version)
+							.eq('is_active', true)
+							.limit(1)
+							.single();
+
+						if (data) {
+							isCritical = data.is_critical || false;
+							minSupportedVersion = data.min_supported_version;
+							if (minSupportedVersion && this.isVersionLower(update.currentVersion, minSupportedVersion)) {
+								isCritical = true;
+							}
+						}
+					}
+				} catch (e) {
+					console.warn('[Updater] Failed to query extra metadata from Supabase:', e);
+				}
+
+				this.updateInfo = {
+					version: update.version,
+					currentVersion: update.currentVersion,
+					releaseNotes: update.body || '',
+					pubDate: update.date,
+					isCritical,
+					minSupportedVersion
+				};
+
+				this.status = 'available';
+				this.modalOpen = true;
+				return true;
+			} else {
+				this.status = 'up-to-date';
+				this.activeUpdate = null;
+				this.updateInfo = null;
+				if (manual) {
+					this.modalOpen = true;
+				}
+				return false;
+			}
+		} catch (err: any) {
+			console.error('[Updater] Check for updates error:', err);
+			this.status = 'error';
+			this.error = err?.message || 'Không thể kiểm tra bản cập nhật';
+			if (manual) {
+				this.modalOpen = true;
+			}
+			return false;
+		}
+	}
+
+	/**
+	 * Kiểm tra trực tiếp qua Supabase khi chạy trên Web hoặc Dev
+	 */
+	private async checkViaSupabaseWeb(manual: boolean): Promise<boolean> {
+		try {
+			const supabase = getSupabase();
+			if (!supabase) {
+				this.status = 'up-to-date';
+				if (manual) this.modalOpen = true;
+				return false;
+			}
+
+			const currentVersion = '0.1.0';
+			const { data: latest } = await supabase
+				.from('app_versions')
+				.select('*')
+				.eq('channel', 'stable')
+				.eq('is_active', true)
+				.order('published_at', { ascending: false })
+				.limit(1)
+				.single();
+
+			if (latest && this.isVersionLower(currentVersion, latest.version)) {
+				const isCritical =
+					latest.is_critical ||
+					(latest.min_supported_version
+						? this.isVersionLower(currentVersion, latest.min_supported_version)
+						: false);
+
+				this.updateInfo = {
+					version: latest.version,
+					currentVersion,
+					releaseNotes: latest.release_notes || '',
+					pubDate: latest.published_at,
+					isCritical,
+					minSupportedVersion: latest.min_supported_version
+				};
+				this.status = 'available';
+				this.modalOpen = true;
+				return true;
+			} else {
+				this.status = 'up-to-date';
+				if (manual) this.modalOpen = true;
+				return false;
+			}
+		} catch (e: any) {
+			this.status = 'error';
+			this.error = e?.message || 'Lỗi kết nối máy chủ cập nhật';
+			if (manual) this.modalOpen = true;
+			return false;
+		}
+	}
+
+	/**
+	 * Tải xuống và cài đặt bản cập nhật qua Tauri Updater Plugin
+	 */
+	async downloadAndInstall(): Promise<void> {
+		if (!this.activeUpdate || !isTauri()) {
+			return;
+		}
+
+		this.status = 'downloading';
+		this.progress = 0;
+		this.error = null;
+
+		try {
+			let downloaded = 0;
+			let contentLength = 0;
+
+			await this.activeUpdate.downloadAndInstall((event: any) => {
+				switch (event.event) {
+					case 'Started':
+						contentLength = event.data.contentLength || 0;
+						this.totalBytes = contentLength;
+						this.downloadedBytes = 0;
+						this.progress = 0;
+						break;
+					case 'Progress':
+						downloaded += event.data.chunkLength || 0;
+						this.downloadedBytes = downloaded;
+						if (contentLength > 0) {
+							this.progress = Math.min(100, Math.round((downloaded / contentLength) * 100));
+						}
+						break;
+					case 'Finished':
+						this.progress = 100;
+						this.status = 'downloaded';
+						break;
+				}
+			});
+
+			this.status = 'downloaded';
+		} catch (err: any) {
+			console.error('[Updater] Download & Install failed:', err);
+			this.status = 'error';
+			this.error = err?.message || 'Tải bản cập nhật thất bại. Vui lòng thử lại sau.';
+		}
+	}
+
+	/**
+	 * Khởi động lại ứng dụng để áp dụng bản cập nhật
+	 */
+	async relaunch(): Promise<void> {
+		if (isTauri()) {
+			const { relaunch } = await import('@tauri-apps/plugin-process');
+			await relaunch();
+		} else {
+			window.location.reload();
+		}
+	}
+
+	/**
+	 * Đóng modal (chỉ cho phép khi không phải bản cập nhật khẩn cấp isCritical)
+	 */
+	closeModal(): void {
+		if (this.updateInfo?.isCritical && this.status === 'available') {
+			return; // Khóa màn hình không cho đóng khi là bản bắt buộc
+		}
+		this.modalOpen = false;
+	}
+}
+
+export const updater = new UpdaterService();
