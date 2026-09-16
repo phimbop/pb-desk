@@ -1,15 +1,11 @@
-import { tmdbTvHandler } from '$lib/runes/tmdbTv.svelte';
+import { tmdbTvHandler, tmdbTvStore } from '$lib/runes/tmdbTv.svelte';
 import { getLocale } from '$lib/paraglide/runtime';
-import { myListMoviesStore, playedListStore } from '$lib/runes/movieStore.svelte';
-import { tmdbTvStore } from '$lib/runes/tmdbTv.svelte';
 import type { TvSeriesDetail } from '../../../../types/Tmdb';
 import type { LayoutLoad } from './$types';
 
 export const load: LayoutLoad = async ({ params }) => {
 	try {
 		await tmdbTvStore.load();
-		await playedListStore.load();
-		await myListMoviesStore.load();
 		const tvId = parseInt(params.tvId);
 		const locale = getLocale() || 'vi-VN';
 		const tvDetail: TvSeriesDetail = await tmdbTvHandler.getTvDetail(tvId, locale);

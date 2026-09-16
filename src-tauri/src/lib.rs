@@ -1,6 +1,8 @@
 use pb_core::models::{FavoriteMovieItem, WatchHistoryItem};
 use pb_ipc::*;
-use pb_service::{FavoriteService, HistoryService, MovieApiClient, MovieService};
+use pb_service::{
+    AuthService, FavoriteService, HistoryService, MovieApiClient, MovieService, SurrealClient,
+};
 use pb_storage::SqliteStorage;
 use std::fs;
 use std::sync::Arc;
@@ -10,6 +12,8 @@ pub struct AppState {
     pub movie_service: MovieService,
     pub history_service: HistoryService,
     pub favorite_service: FavoriteService,
+    pub auth_service: AuthService,
+    pub surreal_client: SurrealClient,
 }
 
 #[tauri::command]
@@ -107,6 +111,16 @@ async fn get_adult_movies(state: State<'_, AppState>) -> Result<Vec<IpcAdultMovi
         .get_adult_movies()
         .await
         .map(|items| items.into_iter().map(Into::into).collect())
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn get_leaderboards(state: State<'_, AppState>) -> Result<IpcLeaderboards, String> {
+    state
+        .movie_service
+        .get_leaderboards()
+        .await
+        .map(Into::into)
         .map_err(|e| e.to_string())
 }
 
@@ -228,6 +242,83 @@ fn is_favorite(state: State<'_, AppState>, movie_slug: String) -> Result<bool, S
         .map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+async fn auth_login(
+    state: State<'_, AppState>,
+    req: LoginRequest,
+) -> Result<IpcAuthResponse, String> {
+    state
+        .auth_service
+        .login(&req.email, &req.password)
+        .await
+        .map(Into::into)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn auth_signup(
+    state: State<'_, AppState>,
+    req: SignupRequest,
+) -> Result<IpcAuthResponse, String> {
+    state
+        .auth_service
+        .signup(&req.email, &req.username, &req.password)
+        .await
+        .map(Into::into)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn auth_get_me(
+    state: State<'_, AppState>,
+    token: String,
+) -> Result<IpcAuthUser, String> {
+    state
+        .auth_service
+        .get_me(&token)
+        .await
+        .map(Into::into)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn auth_logout(
+    state: State<'_, AppState>,
+    token: Option<String>,
+) -> Result<(), String> {
+    state
+        .auth_service
+        .logout(token.as_deref())
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn forward_api(
+    state: State<'_, AppState>,
+    req: IpcForwardRequest,
+) -> Result<IpcForwardResponse, String> {
+    state
+        .auth_service
+        .forward_request(req.into())
+        .await
+        .map(Into::into)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn get_user_watch_stats(
+    state: State<'_, AppState>,
+    user_id: String,
+) -> Result<IpcWatchStats, String> {
+    state
+        .surreal_client
+        .get_user_watch_stats(&user_id)
+        .await
+        .map(Into::into)
+        .map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -251,11 +342,15 @@ pub fn run() {
             let movie_service = MovieService::new(api_client, Arc::clone(&storage) as _);
             let history_service = HistoryService::new(Arc::clone(&storage) as _);
             let favorite_service = FavoriteService::new(Arc::clone(&storage) as _);
+            let surreal_client = SurrealClient::new();
+            let auth_service = AuthService::new(surreal_client.clone());
 
             app.manage(AppState {
                 movie_service,
                 history_service,
                 favorite_service,
+                auth_service,
+                surreal_client,
             });
 
             Ok(())
@@ -275,8 +370,15 @@ pub fn run() {
             toggle_favorite,
             is_favorite,
             get_adult_movies,
+            get_leaderboards,
             get_watching_list,
             record_watching_heartbeat,
+            auth_login,
+            auth_signup,
+            auth_get_me,
+            auth_logout,
+            forward_api,
+            get_user_watch_stats,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

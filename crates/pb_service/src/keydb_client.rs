@@ -26,14 +26,13 @@ impl Default for KeydbClient {
 
 impl KeydbClient {
     pub fn new() -> Self {
-        let host = std::env::var("KEYDB_URL")
-            .unwrap_or_else(|_| DEFAULT_KEYDB_HOST.to_string());
-        let port: u16 = std::env::var("KEYDB_PORT")
-            .ok()
+        let host = crate::surreal_client::load_env_var_or_file("KEYDB_URL")
+            .unwrap_or_else(|| DEFAULT_KEYDB_HOST.to_string());
+        let port: u16 = crate::surreal_client::load_env_var_or_file("KEYDB_PORT")
             .and_then(|p| p.parse().ok())
             .unwrap_or(DEFAULT_KEYDB_PORT);
-        let pass = std::env::var("KEYDB_PASSWORD")
-            .unwrap_or_else(|_| DEFAULT_KEYDB_PASS.to_string());
+        let pass = crate::surreal_client::load_env_var_or_file("KEYDB_PASSWORD")
+            .unwrap_or_else(|| DEFAULT_KEYDB_PASS.to_string());
 
         let redis_url = if pass.is_empty() {
             format!("redis://{}:{}", host, port)

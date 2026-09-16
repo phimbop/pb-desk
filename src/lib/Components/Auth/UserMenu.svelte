@@ -3,18 +3,20 @@
 	import { localizeHref } from '$lib/paraglide/runtime';
 	import LoginModal from './LoginModal.svelte';
 	import { unreadNotificationsCount } from '$lib/runes/notificationStore.svelte';
+	import { authStore } from '$lib/runes/authStore.svelte';
 
-	let { user = null }: { user: { id: string; email: string; username: string; avatar_url: string | null } | null } = $props();
+	let { user = null }: { user: any } = $props();
 
+	let currentUser = $derived(authStore.user ?? user ?? null);
 	let showModal = $state(false);
 	let showMenu = $state(false);
 
-	let initial = $derived(user?.username?.charAt(0)?.toUpperCase() ?? '?');
+	let initial = $derived(currentUser?.username?.charAt(0)?.toUpperCase() ?? '?');
 
 	async function logout() {
 		try {
-			await fetch('/api/auth/logout', { method: 'POST' });
-			window.location.reload();
+			await authStore.logout();
+			showMenu = false;
 		} catch {
 			// Silently fail, user can retry
 		}
@@ -33,7 +35,7 @@
 
 <svelte:window onclick={closeMenu} />
 
-{#if user}
+{#if currentUser}
 	<div class="user-menu-container relative">
 		<button
 			onclick={toggleMenu}
@@ -42,10 +44,10 @@
 			aria-expanded={showMenu}
 		>
 			<div class="relative">
-				{#if user.avatar_url}
+				{#if currentUser.avatar_url || currentUser.avatarUrl}
 					<img
-						src={user.avatar_url}
-						alt={user.username}
+						src={currentUser.avatar_url || currentUser.avatarUrl}
+						alt={currentUser.username}
 						class="w-8 h-8 rounded-full object-cover"
 					/>
 				{:else}
@@ -64,8 +66,8 @@
 		{#if showMenu}
 			<div class="absolute right-0 top-full mt-2 w-48 bg-neutral-900 border border-neutral-700 rounded-xl shadow-xl py-1 z-50">
 				<div class="px-4 py-2 border-b border-neutral-700">
-					<p class="text-sm font-medium text-white truncate">{user.username}</p>
-					<p class="text-xs text-neutral-400 truncate">{user.email}</p>
+					<p class="text-sm font-medium text-white truncate">{currentUser.username}</p>
+					<p class="text-xs text-neutral-400 truncate">{currentUser.email}</p>
 				</div>
 				<a
 					href={localizeHref('/profile')}

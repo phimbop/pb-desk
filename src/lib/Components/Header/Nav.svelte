@@ -4,9 +4,10 @@
 	import { deLocalizeUrl, localizeHref } from '$lib/paraglide/runtime';
 	import Search from '../Search/Search.svelte';
 	import UserMenu from '../Auth/UserMenu.svelte';
+	import { authStore } from '$lib/runes/authStore.svelte';
 
 	const showNav = $derived(!isPlaying.value && !deLocalizeUrl(page.url).pathname.startsWith('/tim-kiem'));
-	const user = $derived(page.data.user ?? null);
+	const user = $derived(authStore.user ?? page.data.user ?? null);
 </script>
 
 <!-- Mobile Header (Fixed & Full Width) -->

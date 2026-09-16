@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
 	import { page } from '$app/state';
+	import { appFetch } from '$lib/ipc';
 
 	interface Props {
 		open: boolean;
@@ -28,7 +29,7 @@
 		loading = true;
 		error = '';
 		try {
-			const res = await fetch('/api/playlists');
+			const res = await appFetch('/api/playlists');
 			if (res.ok) {
 				playlists = await res.json();
 			} else {
@@ -64,7 +65,7 @@
 	async function handleTogglePlaylist(playlist: any, check: boolean) {
 		try {
 			if (check) {
-				const res = await fetch(`/api/playlists/${playlist.id}/movies`, {
+				const res = await appFetch(`/api/playlists/${playlist.id}/movies`, {
 					method: 'POST',
 					headers: { 
 						'Content-Type': 'application/json',
@@ -86,7 +87,7 @@
 					playlists = playlists.map(p => p.id === playlist.id ? updated : p);
 				}
 			} else {
-				const res = await fetch(`/api/playlists/${playlist.id}/movies/${movieId}`, {
+				const res = await appFetch(`/api/playlists/${playlist.id}/movies/${movieId}`, {
 					method: 'DELETE',
 					headers: {
 						'Origin': window.location.origin
@@ -114,7 +115,7 @@
 
 		creating = true;
 		try {
-			const res = await fetch('/api/playlists', {
+			const res = await appFetch('/api/playlists', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',

@@ -1,6 +1,8 @@
 use pb_core::models::{
-    AdultMovieRecord, Episode, FavoriteMovieItem, HomePayload, Movie, MovieDetail, NamedItem,
-    PaginatedResult, ServerData, WatchHistoryItem, WatchingHeartbeatRequest, WatchingItem,
+    AdultMovieRecord, AuthResponse, AuthUser, Episode, FavoriteMovieItem, ForwardRequest,
+    ForwardResponse, HomePayload, LeaderboardUser, Leaderboards, Movie, MovieDetail, NamedItem,
+    PaginatedResult, ServerData, WatchGenre, WatchHistoryItem, WatchStats, WatchingHeartbeatRequest,
+    WatchingItem,
 };
 use serde::{Deserialize, Serialize};
 
@@ -376,3 +378,199 @@ impl From<IpcWatchingHeartbeatRequest> for WatchingHeartbeatRequest {
         }
     }
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct IpcLeaderboardUser {
+    pub user_id: String,
+    pub username: String,
+    pub avatar_url: Option<String>,
+    pub count: u64,
+    #[serde(default)]
+    pub hours: u64,
+    pub total_watch_hours: u64,
+}
+
+impl From<LeaderboardUser> for IpcLeaderboardUser {
+    fn from(u: LeaderboardUser) -> Self {
+        Self {
+            user_id: u.user_id,
+            username: u.username,
+            avatar_url: u.avatar_url,
+            count: u.count,
+            hours: u.hours,
+            total_watch_hours: u.total_watch_hours,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct IpcLeaderboards {
+    pub top_watchers: Vec<IpcLeaderboardUser>,
+    pub top_reviewers: Vec<IpcLeaderboardUser>,
+    pub top_commenters: Vec<IpcLeaderboardUser>,
+}
+
+impl From<Leaderboards> for IpcLeaderboards {
+    fn from(l: Leaderboards) -> Self {
+        Self {
+            top_watchers: l.top_watchers.into_iter().map(Into::into).collect(),
+            top_reviewers: l.top_reviewers.into_iter().map(Into::into).collect(),
+            top_commenters: l.top_commenters.into_iter().map(Into::into).collect(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct IpcAuthUser {
+    pub id: String,
+    pub email: String,
+    pub username: String,
+    pub avatar_url: Option<String>,
+    pub created_at: Option<String>,
+}
+
+impl From<AuthUser> for IpcAuthUser {
+    fn from(u: AuthUser) -> Self {
+        Self {
+            id: u.id,
+            email: u.email,
+            username: u.username,
+            avatar_url: u.avatar_url,
+            created_at: u.created_at,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct IpcAuthResponse {
+    pub success: bool,
+    pub token: Option<String>,
+    pub user: Option<IpcAuthUser>,
+    pub error: Option<String>,
+}
+
+impl From<AuthResponse> for IpcAuthResponse {
+    fn from(r: AuthResponse) -> Self {
+        Self {
+            success: r.success,
+            token: r.token,
+            user: r.user.map(Into::into),
+            error: r.error,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LoginRequest {
+    pub email: String,
+    pub password: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SignupRequest {
+    pub email: String,
+    pub username: String,
+    pub password: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct IpcWatchGenre {
+    pub name: String,
+    pub count: u32,
+}
+
+impl From<WatchGenre> for IpcWatchGenre {
+    fn from(g: WatchGenre) -> Self {
+        Self {
+            name: g.name,
+            count: g.count,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct IpcWatchStats {
+    pub total_movies: u32,
+    pub total_hours: u32,
+    pub top_genres: Vec<IpcWatchGenre>,
+    pub ratings_count: u32,
+}
+
+impl From<WatchStats> for IpcWatchStats {
+    fn from(s: WatchStats) -> Self {
+        Self {
+            total_movies: s.total_movies,
+            total_hours: s.total_hours,
+            top_genres: s.top_genres.into_iter().map(Into::into).collect(),
+            ratings_count: s.ratings_count,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IpcForwardRequest {
+    pub method: String,
+    pub path: String,
+    pub body: Option<serde_json::Value>,
+    pub token: Option<String>,
+}
+
+impl From<ForwardRequest> for IpcForwardRequest {
+    fn from(r: ForwardRequest) -> Self {
+        Self {
+            method: r.method,
+            path: r.path,
+            body: r.body,
+            token: r.token,
+        }
+    }
+}
+
+impl From<IpcForwardRequest> for ForwardRequest {
+    fn from(r: IpcForwardRequest) -> Self {
+        Self {
+            method: r.method,
+            path: r.path,
+            body: r.body,
+            token: r.token,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IpcForwardResponse {
+    pub status: u16,
+    pub body: serde_json::Value,
+    pub session_token: Option<String>,
+}
+
+impl From<ForwardResponse> for IpcForwardResponse {
+    fn from(r: ForwardResponse) -> Self {
+        Self {
+            status: r.status,
+            body: r.body,
+            session_token: r.session_token,
+        }
+    }
+}
+
+impl From<IpcForwardResponse> for ForwardResponse {
+    fn from(r: IpcForwardResponse) -> Self {
+        Self {
+            status: r.status,
+            body: r.body,
+            session_token: r.session_token,
+        }
+    }
+}
+
+
+

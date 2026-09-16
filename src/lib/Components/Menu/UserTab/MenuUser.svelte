@@ -78,7 +78,11 @@
 		{/each}
 	</ul>
 	<div
-		ontransitionend={() => (changingTab = false)}
+		ontransitionend={(e) => {
+			if (e.target === e.currentTarget) {
+				changingTab = false;
+			}
+		}}
 		class="w-full mt-2 transform transition-all duration-200 ease-[cubic-bezier(0.6,0.6,0,1)] {transitionClass}"
 	>
 		{#each items as item}

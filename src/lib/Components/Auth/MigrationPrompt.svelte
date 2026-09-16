@@ -14,6 +14,7 @@
 	let status = $state<'idle' | 'success' | 'error'>('idle');
 
 	import { idbGet, idbSet } from '$lib/runes/createStore.svelte';
+	import { appFetch } from '$lib/ipc';
 
 	async function getLocalPlayedList(): Promise<Array<{ movie_id: string; movie_data: Record<string, unknown>; played_at?: string; updated_at?: string }>> {
 		if (!browser) return [];
@@ -94,7 +95,7 @@
 				favorites: favorites
 			};
 
-			const res = await fetch('/api/auth/migrate', {
+			const res = await appFetch('/api/auth/migrate', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(payload)

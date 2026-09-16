@@ -3,6 +3,7 @@
 	import { page } from '$app/state';
 	import { debounce } from '$lib/helper/debounce';
 	import { apiHandler, isPlaying, playedListStore } from '$lib/runes/movieStore.svelte';
+	import { appFetch } from '$lib/ipc';
 	import { onMount } from 'svelte';
 	import type { TvSeriesDetail } from '../../../types/Tmdb';
 	import ButtonSecondary from '../Button/ButtonSecondary.svelte';
@@ -58,7 +59,7 @@
 	}
 	const reportBreakLink = async () => {
 		loading = true;
-		let res = await fetch('/api/report-broken-link', {
+		let res = await appFetch('/api/report-broken-link', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json'
@@ -162,7 +163,7 @@
 		if (!tmdbId || !watchingSessionId) return;
 
 		try {
-			await fetch('/api/watching/heartbeat', {
+			await appFetch('/api/watching/heartbeat', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ movieId: String(tmdbId), sessionId: watchingSessionId })

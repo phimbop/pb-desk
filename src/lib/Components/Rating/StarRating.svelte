@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
+	import { appFetch } from '$lib/ipc';
 
 	interface Props {
 		movieId: number | string;
@@ -72,7 +73,7 @@
 		message = '';
 
 		try {
-			const res = await fetch('/api/rating', {
+			const res = await appFetch('/api/rating', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ movieId, score })

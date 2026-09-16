@@ -3,6 +3,7 @@
 	import CommentItem from './CommentItem.svelte';
 	import type { CommentWithUser } from '$lib/types/comments';
 	import { getUserRole } from '$lib/utils/rank';
+	import { appFetch } from '$lib/ipc';
 
 	const ALLOWED_EMOJI = ['👍', '❤️', '😂', '😢', '😡', '😮'] as const;
 	type ReactionEmoji = (typeof ALLOWED_EMOJI)[number];
@@ -68,7 +69,7 @@
 		}
 
 		try {
-			const res = await fetch('/api/comments/vote', {
+			const res = await appFetch('/api/comments/vote', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ commentId: comment.id, value: newValue })
@@ -117,7 +118,7 @@
 		}
 
 		try {
-			const res = await fetch('/api/comments/react', {
+			const res = await appFetch('/api/comments/react', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ commentId: comment.id, emoji: newEmoji })
@@ -239,7 +240,7 @@
 		error = '';
 
 		try {
-			const res = await fetch('/api/comments', {
+			const res = await appFetch('/api/comments', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -277,7 +278,7 @@
 		reporting = true;
 
 		try {
-			const res = await fetch('/api/comments/report', {
+			const res = await appFetch('/api/comments/report', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ commentId: comment.id })

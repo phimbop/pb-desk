@@ -4,22 +4,12 @@ This document governs all agent operations in `pb-desk`. Every agent must strict
 
 ## AGY command evidence protocol
 
-For implementation tasks, read `docs/agent-harness/README.md` before edits.
-The verified entry point is `bun --no-env-file run agent:run "task"`: its driver supplies a
-session ID and runs verification independently after each response. In driver
-mode, write the task contract and implement; let the driver invoke verification.
-Native AGY hooks are experimental on this machine; direct `agy` has not been
-confirmed to enforce this gate.
-When the AGY hook supplies a session ID, create `.agents/task.json` for that
-session with every requested requirement mapped to executable acceptance checks.
-After the final edit, run `bun --no-env-file run agent:verify <sessionId>` and inspect its actual
-exit status and logs. Report PASS, FAIL, NOT_RUN, STALE, RUNNING or BLOCKED accurately.
-Never treat AGY's SUCCESS envelope, your own summary, a pending command, or a prior
-source snapshot as proof that tests passed. Do not edit evidence, weaken tests,
-or disable hooks to bypass a failure. At the retry limit report BLOCKED and the
-remaining work. Passing configured checks does not establish complete requirement
-coverage or UI/backend integration; use task-specific behavior tests and review.
-Question-only sessions without edits do not need the implementation gates.
+For implementation tasks or explicit verification requests, follow
+`.agents/rules/command-evidence.md`. It defines task setup, verification in the
+current AGY session, failure handling and the evidence required in the report.
+Read `docs/agent-harness/README.md` for the task contract schema and driver mode.
+Direct AGY uses an instruction to call the verifier; enforced native Stop hooks
+remain unconfirmed on this installation.
 
 ---
 

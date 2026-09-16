@@ -138,3 +138,70 @@ pub struct WatchingHeartbeatRequest {
     pub movie_id: String,
     pub session_id: String,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct LeaderboardUser {
+    pub user_id: String,
+    pub username: String,
+    pub avatar_url: Option<String>,
+    pub count: u64,
+    #[serde(default)]
+    pub hours: u64,
+    pub total_watch_hours: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+pub struct Leaderboards {
+    pub top_watchers: Vec<LeaderboardUser>,
+    pub top_reviewers: Vec<LeaderboardUser>,
+    pub top_commenters: Vec<LeaderboardUser>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct AuthUser {
+    pub id: String,
+    pub email: String,
+    pub username: String,
+    pub avatar_url: Option<String>,
+    pub created_at: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct AuthResponse {
+    pub success: bool,
+    pub token: Option<String>,
+    pub user: Option<AuthUser>,
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct WatchGenre {
+    pub name: String,
+    pub count: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+pub struct WatchStats {
+    pub total_movies: u32,
+    pub total_hours: u32,
+    pub top_genres: Vec<WatchGenre>,
+    pub ratings_count: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ForwardRequest {
+    pub method: String,
+    pub path: String,
+    pub body: Option<serde_json::Value>,
+    pub token: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ForwardResponse {
+    pub status: u16,
+    pub body: serde_json::Value,
+    pub session_token: Option<String>,
+}
+
+
+

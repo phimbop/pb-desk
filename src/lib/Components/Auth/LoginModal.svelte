@@ -37,28 +37,21 @@
 		mode = 'login';
 	}
 
+	import { authStore } from '$lib/runes/authStore.svelte';
+	import { idbGet } from '$lib/runes/createStore.svelte';
+
 	async function handleSubmit(e: Event) {
 		e.preventDefault();
 		error = '';
 		loading = true;
 
 		try {
-			const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/signup';
-			const body: Record<string, string> = { email, password };
-			if (mode === 'register') {
-				body.username = username;
-			}
+			const res = mode === 'login'
+				? await authStore.login(email, password)
+				: await authStore.signup(email, username, password);
 
-			const res = await fetch(endpoint, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(body)
-			});
-
-			const data = await res.json();
-
-			if (!res.ok) {
-				error = data.error || m.auth_error_generic();
+			if (!res.success) {
+				error = res.error || m.auth_error_generic();
 				return;
 			}
 
@@ -66,8 +59,6 @@
 			const hasData = await needsMigration();
 			if (browser && hasData) {
 				showMigration = true;
-			} else {
-				window.location.reload();
 			}
 		} catch {
 			error = m.auth_error_connection();
@@ -75,8 +66,6 @@
 			loading = false;
 		}
 	}
-
-	import { idbGet } from '$lib/runes/createStore.svelte';
 
 	async function needsMigration(): Promise<boolean> {
 		if (!browser) return false;
@@ -99,7 +88,6 @@
 
 	function onMigrationComplete() {
 		showMigration = false;
-		window.location.reload();
 	}
 </script>
 

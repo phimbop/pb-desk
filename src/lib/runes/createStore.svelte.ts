@@ -1,5 +1,6 @@
 import { page } from '$app/state';
 import { browser } from '$app/environment';
+import { appFetch } from '$lib/ipc';
 
 const DB_NAME = 'phimbop_local';
 const DB_VERSION = 1;
@@ -227,7 +228,7 @@ export const useSurrealDB = <T>(table: string, id: string, initialValue: T) => {
 
 				if (syncUrl) {
 					try {
-						const res = await fetch(syncUrl);
+						const res = await appFetch(syncUrl);
 						if (res.ok) {
 							const serverData = await res.json();
 							const localData = (await idbGet<any[]>(table, id)) || [];
@@ -252,7 +253,7 @@ export const useSurrealDB = <T>(table: string, id: string, initialValue: T) => {
 									? { played_list: toMigrate }
 									: { favorites: toMigrate };
 
-								fetch('/api/auth/migrate', {
+								appFetch('/api/auth/migrate', {
 									method: 'POST',
 									headers: { 'Content-Type': 'application/json' },
 									body: JSON.stringify(payload)

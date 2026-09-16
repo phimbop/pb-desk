@@ -8,6 +8,7 @@
 	import tooltip from '$lib/helper/tooltip';
 	import { isPlaying } from '$lib/runes/movieStore.svelte';
 	import { unreadNotificationsCount } from '$lib/runes/notificationStore.svelte';
+	import { authStore } from '$lib/runes/authStore.svelte';
 
 	interface Props {
 		[key: string]: any
@@ -19,7 +20,7 @@
 
 	let showLoginModal = $state(false);
 
-	let user = $derived(page.data.user ?? null);
+	let user = $derived(authStore.user ?? page.data.user ?? null);
 	let initial = $derived(user?.username?.charAt(0)?.toUpperCase() ?? '?');
 </script>
 
@@ -153,9 +154,9 @@
 				use:tooltip={{ text: m.profile_title(), position: 'right' }}
 			>
 				<div class="relative">
-					{#if user.avatar_url}
+					{#if user.avatar_url || user.avatarUrl}
 						<img
-							src={user.avatar_url}
+							src={user.avatar_url || user.avatarUrl}
 							alt={user.username}
 							class="w-8 h-8 rounded-full object-cover group-hover:scale-105 transition-transform"
 						/>

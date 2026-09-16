@@ -1,11 +1,17 @@
 import type {
 	AdultMovieRecord,
+	AuthResponse,
+	AuthUser,
 	FavoriteMovie,
+	ForwardRequest,
+	ForwardResponse,
 	HomeData,
+	Leaderboards,
 	Movie,
 	MovieDetail,
 	PaginatedResponse,
 	WatchHistory,
+	WatchStats,
 	WatchingItem
 } from './types';
 
@@ -27,6 +33,10 @@ async function safeInvoke<T>(command: string, args?: Record<string, unknown>): P
 
 async function fallbackApi<T>(command: string, args?: Record<string, unknown>): Promise<T> {
 	const DOMAIN = 'https://phimapi.com';
+	const SURREAL_SQL_ENDPOINT =
+		(typeof import.meta !== 'undefined' &&
+			(import.meta.env?.PUBLIC_SURREAL_URL || import.meta.env?.VITE_SURREAL_URL)) ||
+		'https://srv2.phimbop.cfd/sql';
 
 	switch (command) {
 		case 'get_home_data': {
@@ -299,7 +309,7 @@ async function fallbackApi<T>(command: string, args?: Record<string, unknown>): 
 					return JSON.parse(cached) as T;
 				} catch (_) {}
 			}
-			const res = await fetch('https://srv2.phimbop.cfd/sql', {
+			const res = await fetch(SURREAL_SQL_ENDPOINT, {
 				method: 'POST',
 				headers: {
 					'surreal-ns': 'pb',
@@ -316,6 +326,106 @@ async function fallbackApi<T>(command: string, args?: Record<string, unknown>): 
 				} catch (_) {}
 			}
 			return items as T;
+		}
+
+		case 'get_leaderboards': {
+			const cached = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('pb_leaderboards_monthly') : null;
+			if (cached) {
+				try {
+					return JSON.parse(cached) as T;
+				} catch (_) {}
+			}
+			const startOfMonth = new Date();
+			startOfMonth.setDate(1);
+			startOfMonth.setHours(0, 0, 0, 0);
+			const startOfMonthStr = startOfMonth.toISOString();
+
+			const query = `SELECT user, user.username AS username, user.avatar_url AS avatar_url, count() AS watch_count FROM user_played_list WHERE updated_at >= type::datetime('${startOfMonthStr}') GROUP BY user, username, avatar_url;
+SELECT user, user.username AS username, user.avatar_url AS avatar_url, count() AS rating_count FROM rating GROUP BY user, username, avatar_url;
+SELECT user, user.username AS username, user.avatar_url AS avatar_url, count() AS comment_count FROM comment GROUP BY user, username, avatar_url;
+SELECT user, count() AS count FROM user_played_list GROUP BY user;`;
+
+			const res = await fetch(SURREAL_SQL_ENDPOINT, {
+				method: 'POST',
+				headers: {
+					'surreal-ns': 'pb',
+					'surreal-db': 'pbdb',
+					'Authorization': 'Basic cm9vdDpyb290',
+					'Accept': 'application/json'
+				},
+				body: query
+			}).then((r) => r.json());
+
+			const watchersRaw: any[] = res?.[0]?.result || [];
+			const reviewersRaw: any[] = res?.[1]?.result || [];
+			const commentersRaw: any[] = res?.[2]?.result || [];
+			const totalCountsRaw: any[] = res?.[3]?.result || [];
+
+			const watchHoursMap = new Map<string, number>();
+			for (const row of totalCountsRaw) {
+				const uid = String(row.user || '');
+				if (uid) {
+					const normalized = uid.startsWith('user:') ? uid : `user:${uid}`;
+					watchHoursMap.set(normalized, Math.round(Number(row.count || 0) * 2));
+				}
+			}
+
+			const topWatchers = watchersRaw
+				.map((row) => {
+					const uid = String(row.user || '');
+					const normalized = uid.startsWith('user:') ? uid : `user:${uid}`;
+					const count = Number(row.watch_count || 0);
+					return {
+						userId: uid,
+						username: row.username || 'Unknown',
+						avatarUrl: row.avatar_url || null,
+						count,
+						hours: Math.round(count * 2),
+						totalWatchHours: watchHoursMap.get(normalized) || 0
+					};
+				})
+				.sort((a, b) => b.count - a.count)
+				.slice(0, 50);
+
+			const topReviewers = reviewersRaw
+				.map((row) => {
+					const uid = String(row.user || '');
+					const normalized = uid.startsWith('user:') ? uid : `user:${uid}`;
+					return {
+						userId: uid,
+						username: row.username || 'Unknown',
+						avatarUrl: row.avatar_url || null,
+						count: Number(row.rating_count || 0),
+						hours: 0,
+						totalWatchHours: watchHoursMap.get(normalized) || 0
+					};
+				})
+				.sort((a, b) => b.count - a.count)
+				.slice(0, 50);
+
+			const topCommenters = commentersRaw
+				.map((row) => {
+					const uid = String(row.user || '');
+					const normalized = uid.startsWith('user:') ? uid : `user:${uid}`;
+					return {
+						userId: uid,
+						username: row.username || 'Unknown',
+						avatarUrl: row.avatar_url || null,
+						count: Number(row.comment_count || 0),
+						hours: 0,
+						totalWatchHours: watchHoursMap.get(normalized) || 0
+					};
+				})
+				.sort((a, b) => b.count - a.count)
+				.slice(0, 50);
+
+			const leaderboards = { topWatchers, topReviewers, topCommenters };
+			if (typeof sessionStorage !== 'undefined') {
+				try {
+					sessionStorage.setItem('pb_leaderboards_monthly', JSON.stringify(leaderboards));
+				} catch (_) {}
+			}
+			return leaderboards as T;
 		}
 
 		case 'get_watching_list': {
@@ -341,6 +451,100 @@ async function fallbackApi<T>(command: string, args?: Record<string, unknown>): 
 				} catch (_) {}
 			}
 			return undefined as T;
+		}
+
+		case 'auth_login': {
+			const req = args?.req as any;
+			return fetch('https://v3.phimbop.cfd/api/auth/login', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', 'Origin': 'https://v3.phimbop.cfd' },
+				body: JSON.stringify(req)
+			}).then(async (r) => {
+				const data = await r.json();
+				if (!r.ok) return { success: false, error: data.error || 'Login failed' } as T;
+				return { success: true, user: data.user } as T;
+			});
+		}
+
+		case 'auth_signup': {
+			const req = args?.req as any;
+			return fetch('https://v3.phimbop.cfd/api/auth/signup', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', 'Origin': 'https://v3.phimbop.cfd' },
+				body: JSON.stringify(req)
+			}).then(async (r) => {
+				const data = await r.json();
+				if (!r.ok) return { success: false, error: data.error || 'Signup failed' } as T;
+				return { success: true, user: data.user } as T;
+			});
+		}
+
+		case 'auth_get_me': {
+			const token = args?.token as string;
+			return fetch('https://v3.phimbop.cfd/api/auth/me', {
+				headers: { Cookie: `session=${token}`, Origin: 'https://v3.phimbop.cfd' }
+			}).then(async (r) => {
+				const data = await r.json();
+				return data.user as T;
+			});
+		}
+
+		case 'auth_logout': {
+			const token = args?.token as string;
+			return fetch('https://v3.phimbop.cfd/api/auth/logout', {
+				method: 'POST',
+				headers: { Cookie: `session=${token}`, Origin: 'https://v3.phimbop.cfd' }
+			}).then(() => undefined as T);
+		}
+
+		case 'forward_api': {
+			const req = args?.req as ForwardRequest;
+			const headers: Record<string, string> = {
+				'Content-Type': 'application/json',
+				'Origin': 'https://v3.phimbop.cfd',
+				'Accept': 'application/json'
+			};
+			if (req.token) {
+				headers['Cookie'] = `session=${req.token}`;
+			}
+			const path = req.path.startsWith('/') ? req.path : `/${req.path}`;
+			return fetch(`https://v3.phimbop.cfd${path}`, {
+				method: req.method,
+				headers,
+				body: req.body ? JSON.stringify(req.body) : undefined
+			}).then(async (r) => {
+				let body = {};
+				try {
+					body = await r.json();
+				} catch (_) {}
+				return {
+					status: r.status,
+					body
+				} as T;
+			});
+		}
+
+		case 'get_user_watch_stats': {
+			const userId = (args?.userId || args?.user_id) as string;
+			return fetch(SURREAL_SQL_ENDPOINT, {
+				method: 'POST',
+				headers: {
+					'surreal-ns': 'pb',
+					'surreal-db': 'pbdb',
+					'Authorization': 'Basic cm9vdDpyb290',
+					'Accept': 'application/json'
+				},
+				body: `SELECT count() AS count FROM user_played_list WHERE user = type::record('${userId}') OR user = '${userId}' GROUP ALL;`
+			}).then(async (r) => {
+				const data = await r.json();
+				const count = data?.[0]?.result?.[0]?.count || 0;
+				return {
+					totalMovies: count,
+					totalHours: count * 2,
+					topGenres: [],
+					ratingsCount: 0
+				} as T;
+			});
 		}
 
 		default:
@@ -372,9 +576,54 @@ export const api = {
 		safeInvoke<boolean>('toggle_favorite', { req }),
 	isFavorite: (movieSlug: string) => safeInvoke<boolean>('is_favorite', { movieSlug, movie_slug: movieSlug }),
 	getAdultMovies: () => safeInvoke<AdultMovieRecord[]>('get_adult_movies'),
+	getLeaderboards: () => safeInvoke<Leaderboards>('get_leaderboards'),
 	getWatchingList: (limit = 10) => safeInvoke<WatchingItem[]>('get_watching_list', { limit }),
 	recordWatchingHeartbeat: (movieId: string, sessionId: string) =>
 		safeInvoke<void>('record_watching_heartbeat', {
 			req: { movie_id: movieId, session_id: sessionId }
-		})
+		}),
+	login: (req: { email: string; password: string }) =>
+		safeInvoke<AuthResponse>('auth_login', { req }),
+	signup: (req: { email: string; username: string; password: string }) =>
+		safeInvoke<AuthResponse>('auth_signup', { req }),
+	getMe: (token: string) =>
+		safeInvoke<AuthUser>('auth_get_me', { token }),
+	logout: (token?: string | null) =>
+		safeInvoke<void>('auth_logout', { token }),
+	forwardApi: (req: ForwardRequest) =>
+		safeInvoke<ForwardResponse>('forward_api', { req }),
+	getUserWatchStats: (userId: string) =>
+		safeInvoke<WatchStats>('get_user_watch_stats', { userId, user_id: userId })
 };
+
+/**
+ * Universal appFetch helper that automatically routes /api/* requests
+ * through Tauri forward_api (or remote URL in browser dev) with session token.
+ */
+export async function appFetch(input: string | URL, init?: RequestInit): Promise<Response> {
+	const urlStr = typeof input === 'string' ? input : input.toString();
+	if (urlStr.startsWith('/api/') || urlStr.startsWith('api/')) {
+		const method = init?.method || 'GET';
+		let body = undefined;
+		if (init?.body) {
+			try {
+				body = typeof init.body === 'string' ? JSON.parse(init.body) : init.body;
+			} catch {
+				body = init.body;
+			}
+		}
+		const token = typeof localStorage !== 'undefined' ? localStorage.getItem('session_token') : null;
+		const res = await api.forwardApi({
+			method,
+			path: urlStr.startsWith('/') ? urlStr : `/${urlStr}`,
+			body,
+			token
+		});
+		return new Response(JSON.stringify(res.body), {
+			status: res.status,
+			headers: { 'Content-Type': 'application/json' }
+		});
+	}
+	return fetch(input, init);
+}
+

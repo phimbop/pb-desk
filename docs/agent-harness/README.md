@@ -2,7 +2,41 @@
 
 ## Cách dùng
 
-**Cách chạy đã triển khai trên máy này:**
+### Kiểm chứng ngay trong phiên AGY đang làm việc
+
+Mở `agy` trong repo và giao task như bình thường. Rule
+`.agents/rules/command-evidence.md` hướng dẫn agent chuẩn bị `.agents/task.json`,
+sau khi sửa xong gọi lệnh Bash ngay trong phiên hiện tại:
+
+```bash
+bun --no-env-file run agent:verify <sessionId>
+```
+
+Đặt working directory của công cụ Bash là `/home/arch/Project/test/pb-desk`.
+Nếu không chỉ định được thư mục cho công cụ, chuyển thư mục ngay trong lệnh:
+
+```bash
+cd /home/arch/Project/test/pb-desk && bun --no-env-file run agent:verify <sessionId>
+```
+
+`<sessionId>` phải trùng trường `sessionId` trong task contract. Khi không có
+driver/hook cung cấp ID, dùng ID conversation nếu biết; nếu không, tạo ID riêng
+cho task. ID tự tạo không được coi là ID conversation do AGY xác nhận.
+Agent phải cập nhật tiêu chí cho task mới; contract của đợt cài harness không
+thay thế tiêu chí nghiệm thu tính năng đang làm.
+
+`agent:verify` chạy các lệnh kiểm tra và ghi evidence, không gọi model khác.
+Nó nhận ID và đọc tiêu chí trong file JSON, không nhận đề bài ngôn ngữ tự nhiên.
+Agent chờ exit code và kết quả rồi sửa lỗi, chạy lại và báo cáo đúng trạng thái.
+Rule được khai báo Always On; với phiên đã mở trước khi thêm rule, yêu cầu agent
+đọc `.agents/rules/command-evidence.md` hoặc mở phiên mới.
+
+**Đây là quy trình do agent tuân thủ.** Rule không cưỡng chế agent gọi lệnh và
+không chặn được mọi báo cáo sai. Việc thực thi verifier không cần native hooks.
+
+### Bộ điều phối kiểm chứng độc lập
+
+Chạy từ terminal khi muốn chương trình điều phối cả task và kiểm chứng:
 
 ```bash
 bun --no-env-file run agent:run "Mô tả yêu cầu sửa hoặc thêm tính năng"
@@ -13,7 +47,8 @@ Driver gọi AGY ở chế độ headless, cung cấp session ID, tự chạy ve
 và gửi lỗi trở lại cùng conversation (tối đa ba lượt). Kết quả cuối được chương
 trình tạo: PASS hoặc BLOCKED, cùng đường dẫn log. Phản hồi model được giữ trong
 log, không hiển thị thành tuyên bố hoàn thành chưa kiểm chứng. Đây là lệnh dành
-cho **tác vụ lập trình**; tiếp tục dùng `agy` bình thường cho hỏi đáp.
+cho **tác vụ lập trình**, không dùng nó làm lệnh kiểm chứng bên trong AGY vì nó
+sẽ khởi chạy một lượt AGY khác. Trong phiên AGY hiện tại dùng `agent:verify`.
 
 **Native hook chưa được xác nhận hoạt động trên AGY 1.2.3 tại máy này.** Các probe
 workspace/global/plugin và TUI nhận phản hồi từ model, nhưng không ghi được lần
@@ -35,7 +70,7 @@ Ví dụ cấu trúc task (thay nội dung và đường dẫn test bằng yêu 
 
 ```json
 {
-  "sessionId": "ID_DO_HOOK_CUNG_CAP",
+  "sessionId": "ID_CUA_TASK_DANG_LAM",
   "title": "Lưu và đọc lại cài đặt",
   "requirements": [
     {

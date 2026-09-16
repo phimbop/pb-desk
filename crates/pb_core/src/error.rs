@@ -19,6 +19,9 @@ pub enum PbError {
 
     #[error("Internal service error: {0}")]
     Internal(String),
+
+    #[error("Unauthorized")]
+    Unauthorized,
 }
 
 pub type PbResult<T> = Result<T, PbError>;

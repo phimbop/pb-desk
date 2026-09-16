@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
+	import { appFetch } from '$lib/ipc';
 
 	interface Props {
 		slug: string;
@@ -31,7 +32,7 @@
 
 	async function loadFollowState() {
 		try {
-			const res = await fetch('/api/push/subscriptions');
+			const res = await appFetch('/api/push/subscriptions');
 			if (res.ok) {
 				const data = await res.json();
 				isSubscribed = data.subscribed;
@@ -76,7 +77,7 @@
 		const subJson = subscription.toJSON();
 
 		// Save to server
-		const res = await fetch('/api/push/subscribe', {
+		const res = await appFetch('/api/push/subscribe', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
@@ -112,13 +113,13 @@
 
 			if (isFollowing) {
 				// Unfollow
-				const res = await fetch(`/api/push/follow/${slug}`, { method: 'DELETE' });
+				const res = await appFetch(`/api/push/follow/${slug}`, { method: 'DELETE' });
 				if (res.ok) {
 					isFollowing = false;
 				}
 			} else {
 				// Follow
-				const res = await fetch(`/api/push/follow/${slug}`, { method: 'POST' });
+				const res = await appFetch(`/api/push/follow/${slug}`, { method: 'POST' });
 				if (res.ok) {
 					isFollowing = true;
 				} else {

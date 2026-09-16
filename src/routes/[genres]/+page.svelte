@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
 	import { api } from '$lib/ipc';
 	import type { Movie, PaginatedResponse } from '$lib/types';
 	import CardkkPhimLe from '$lib/Components/Card/CardkkPhimLe.svelte';
@@ -7,7 +8,7 @@
 	import Paginations from '$lib/Components/Paginations.svelte';
 	import { kkMovieGenres, kkMovieGenresEnglish } from '$lib';
 	import { m } from '$lib/paraglide/messages';
-	import { getLocale } from '$lib/paraglide/runtime';
+	import { getLocale, locales } from '$lib/paraglide/runtime';
 	import { untrack } from 'svelte';
 
 	let genreSlug = $derived(page.params.genres as string);
@@ -17,7 +18,7 @@
 	let error = $state<string | null>(null);
 
 	const loadMovies = async (p: number) => {
-		if (!genreSlug) return;
+		if (!genreSlug || locales.includes(genreSlug as any)) return;
 		loading = true;
 		error = null;
 		try {
@@ -34,6 +35,10 @@
 
 	$effect(() => {
 		const currentSlug = genreSlug;
+		if (locales.includes(currentSlug as any)) {
+			goto('/', { replaceState: true });
+			return;
+		}
 		const p = currentPage;
 		untrack(() => {
 			if (currentSlug) {

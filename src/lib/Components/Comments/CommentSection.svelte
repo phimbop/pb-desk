@@ -3,6 +3,7 @@
 	import { onMount } from 'svelte';
 	import CommentItem from './CommentItem.svelte';
 	import type { CommentWithUser } from '$lib/types/comments';
+	import { appFetch } from '$lib/ipc';
 
 	let { movieId, user }: { movieId: string; user: { id: string; username: string; avatar_url: string | null } | null } = $props();
 
@@ -19,7 +20,7 @@
 
 	async function fetchComments(pageNum: number = 1, append: boolean = false) {
 		try {
-			const res = await fetch(`/api/comments/${movieId}?page=${pageNum}&limit=20&sort=${sort}`);
+			const res = await appFetch(`/api/comments/${movieId}?page=${pageNum}&limit=20&sort=${sort}`);
 			if (!res.ok) throw new Error('Failed to fetch');
 			const data = await res.json();
 			if (append) {
@@ -51,7 +52,7 @@
 		error = '';
 
 		try {
-			const res = await fetch('/api/comments', {
+			const res = await appFetch('/api/comments', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({

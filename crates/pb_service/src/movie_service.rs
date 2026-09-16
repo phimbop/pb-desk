@@ -3,7 +3,8 @@ use crate::keydb_client::KeydbClient;
 use crate::surreal_client::SurrealClient;
 use pb_core::error::PbResult;
 use pb_core::models::{
-    AdultMovieRecord, HomePayload, Movie, MovieDetail, NamedItem, PaginatedResult, WatchingItem,
+    AdultMovieRecord, HomePayload, Leaderboards, Movie, MovieDetail, NamedItem, PaginatedResult,
+    WatchingItem,
 };
 use pb_core::traits::MovieCacheRepository;
 use std::sync::Arc;
@@ -81,6 +82,37 @@ impl MovieService {
                         if !items.is_empty() {
                             return Ok(items);
                         }
+                    }
+                }
+                Err(e)
+            }
+        }
+    }
+
+    pub async fn get_leaderboards(&self) -> PbResult<Leaderboards> {
+        const CACHE_KEY: &str = "surreal_leaderboards_monthly";
+
+        // Check SQLite cache first for sub-millisecond retrieval
+        if let Ok(Some(cached_json)) = self.cache.get_cached_json(CACHE_KEY) {
+            if let Ok(lb) = serde_json::from_str::<Leaderboards>(&cached_json) {
+                return Ok(lb);
+            }
+        }
+
+        // Fetch from SurrealDB
+        match self.surreal_client.get_leaderboards().await {
+            Ok(lb) => {
+                if let Ok(json_str) = serde_json::to_string(&lb) {
+                    // Cache for 5 minutes (300 seconds)
+                    let _ = self.cache.set_cached_json(CACHE_KEY, &json_str, 300);
+                }
+                Ok(lb)
+            }
+            Err(e) => {
+                // If network fails (e.g. offline), try returning cached data
+                if let Ok(Some(cached_json)) = self.cache.get_cached_json(CACHE_KEY) {
+                    if let Ok(lb) = serde_json::from_str::<Leaderboards>(&cached_json) {
+                        return Ok(lb);
                     }
                 }
                 Err(e)

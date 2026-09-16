@@ -5,8 +5,6 @@
 	import { sortPlayedList } from '$lib/helper/sortListPlayedMovie';
 	import { onMount } from 'svelte';
 	import { m } from '$lib/paraglide/messages';
-	let movies = $derived(playedListStore.value)
-	$inspect('movies', movies);
 	let loading = false;
 	let currentPage = $state(1);
 	interface Props {
@@ -33,14 +31,12 @@
 	});
 </script>
 {#if playedListStore.value?.length}
-<section  class="w-full">
-	<div class=" flex mx-auto">
+<section class="w-full">
+	<div class="flex mx-auto">
 		<div class="grid md:grid-cols-10 gap-2 w-full h-full">
-			{#key playedListStore.value}
-				{#each currentMovieList.slice(0, itemsPerPage) as movie,i}
-					<CardMyMoviesList movie={movie} showDate={false} showWatchedTime={true} class="" />
-				{/each}
-			{/key}
+			{#each currentMovieList.slice(0, itemsPerPage) as movie, i (movie._id || movie.id || movie.slug || i)}
+				<CardMyMoviesList movie={movie} showDate={false} showWatchedTime={true} class="" />
+			{/each}
 		</div>
 	</div>
     <div class="flex flex-col items-center mx-auto w-full container">

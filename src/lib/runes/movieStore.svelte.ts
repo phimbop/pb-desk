@@ -1,5 +1,6 @@
 import { browser } from '$app/environment';
 import { domainMovies, tmdbEndpoint, tmdbOptionApi, getTmdbUrl, getTmdbHeaders, patternKKImageDomain } from '$lib';
+import { appFetch } from '$lib/ipc';
 import { useSurrealDB } from './createStore.svelte';
 import type { TmdbMovieDetail, TmdbMovieList, FilterType, TmdbMovies } from '../../types/Tmdb';
 
@@ -311,8 +312,9 @@ export const moviesHandler = {
 
 			// 3. Sync to server if logged in
 			const { page } = await import('$app/state');
-			if (page.data.user) {
-				await fetch('/api/user/favorites', {
+			const { authStore } = await import('$lib/runes/authStore.svelte');
+			if (authStore.user || page.data.user) {
+				await appFetch('/api/user/favorites', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({ movie: standardizedMovie, action })
@@ -328,7 +330,7 @@ export const moviesHandler = {
 export const apiHandler = {
 	srdbRegisterView: async (data: PlayerMovieInfo) => {
 		try {
-			const response = await fetch('/api/sr-register-view', {
+			const response = await appFetch('/api/sr-register-view', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json'
@@ -339,12 +341,12 @@ export const apiHandler = {
 				console.warn(`[apiHandler] srdbRegisterView status: ${response.status}`);
 			}
 		} catch (error) {
-			console.warn('[apiHandler] srdbRegisterView skipped in desktop mode:', error);
+			console.warn('[apiHandler] srdbRegisterView skipped:', error);
 		}
 	},
 	srdbUpdatePlayingProgress: async (data: PlayerMovieInfo) => {
 		try {
-			const response = await fetch('/api/sr-update-progress', {
+			const response = await appFetch('/api/sr-update-progress', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json'
@@ -355,7 +357,7 @@ export const apiHandler = {
 				console.warn(`[apiHandler] srdbUpdatePlayingProgress status: ${response.status}`);
 			}
 		} catch (error) {
-			console.warn('[apiHandler] srdbUpdatePlayingProgress skipped in desktop mode:', error);
+			console.warn('[apiHandler] srdbUpdatePlayingProgress skipped:', error);
 		}
 	}
 };

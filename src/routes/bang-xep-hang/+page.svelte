@@ -5,54 +5,16 @@
 	import { getUserRole } from '$lib/utils/rank';
 	import Seo from '$lib/Components/SEO/Seo.svelte';
 	import { websiteUrl } from '$lib';
+	import type { Leaderboards } from '$lib/types';
 
 	let { data } = $props<{
-		data?: {
-			leaderboards?: {
-				topWatchers: { userId: string; username: string; avatarUrl: string | null; count: number; hours: number; totalWatchHours: number }[];
-				topReviewers: { userId: string; username: string; avatarUrl: string | null; count: number; totalWatchHours: number }[];
-				topCommenters: { userId: string; username: string; avatarUrl: string | null; count: number; totalWatchHours: number }[];
-			};
+		data: {
+			leaderboards: Leaderboards;
 		};
 	}>();
 
 	let activeTab = $state<'watchers' | 'reviewers' | 'commenters'>('watchers');
 	let currentUser = $derived(page.data?.user ?? null);
-
-	const defaultLeaderboards = {
-		topWatchers: [
-			{ userId: 'u1', username: 'Kaiser_Film', avatarUrl: null, count: 88, hours: 142, totalWatchHours: 142 },
-			{ userId: 'u2', username: 'MinhAnh_Cinema', avatarUrl: null, count: 62, hours: 96, totalWatchHours: 96 },
-			{ userId: 'u3', username: 'DragonBop', avatarUrl: null, count: 51, hours: 78, totalWatchHours: 78 },
-			{ userId: 'u4', username: 'HoangLong99', avatarUrl: null, count: 40, hours: 64, totalWatchHours: 64 },
-			{ userId: 'u5', username: 'ThanhTruc', avatarUrl: null, count: 34, hours: 52, totalWatchHours: 52 },
-			{ userId: 'u6', username: 'BopMaster', avatarUrl: null, count: 25, hours: 38, totalWatchHours: 38 },
-			{ userId: 'u7', username: 'NguyenVanA', avatarUrl: null, count: 17, hours: 26, totalWatchHours: 26 },
-			{ userId: 'u8', username: 'HaVy_Movie', avatarUrl: null, count: 12, hours: 19, totalWatchHours: 19 }
-		],
-		topReviewers: [
-			{ userId: 'u1', username: 'Kaiser_Film', avatarUrl: null, count: 45, hours: 142, totalWatchHours: 142 },
-			{ userId: 'u2', username: 'MinhAnh_Cinema', avatarUrl: null, count: 38, hours: 96, totalWatchHours: 96 },
-			{ userId: 'u3', username: 'DragonBop', avatarUrl: null, count: 29, hours: 78, totalWatchHours: 78 },
-			{ userId: 'u4', username: 'HoangLong99', avatarUrl: null, count: 22, hours: 64, totalWatchHours: 64 },
-			{ userId: 'u5', username: 'ThanhTruc', avatarUrl: null, count: 18, hours: 52, totalWatchHours: 52 },
-			{ userId: 'u6', username: 'BopMaster', avatarUrl: null, count: 14, hours: 38, totalWatchHours: 38 },
-			{ userId: 'u7', username: 'NguyenVanA', avatarUrl: null, count: 10, hours: 26, totalWatchHours: 26 },
-			{ userId: 'u8', username: 'HaVy_Movie', avatarUrl: null, count: 8, hours: 19, totalWatchHours: 19 }
-		],
-		topCommenters: [
-			{ userId: 'u1', username: 'Kaiser_Film', avatarUrl: null, count: 120, hours: 142, totalWatchHours: 142 },
-			{ userId: 'u2', username: 'MinhAnh_Cinema', avatarUrl: null, count: 94, hours: 96, totalWatchHours: 96 },
-			{ userId: 'u3', username: 'DragonBop', avatarUrl: null, count: 82, hours: 78, totalWatchHours: 78 },
-			{ userId: 'u4', username: 'HoangLong99', avatarUrl: null, count: 65, hours: 64, totalWatchHours: 64 },
-			{ userId: 'u5', username: 'ThanhTruc', avatarUrl: null, count: 50, hours: 52, totalWatchHours: 52 },
-			{ userId: 'u6', username: 'BopMaster', avatarUrl: null, count: 39, hours: 38, totalWatchHours: 38 },
-			{ userId: 'u7', username: 'NguyenVanA', avatarUrl: null, count: 28, hours: 26, totalWatchHours: 26 },
-			{ userId: 'u8', username: 'HaVy_Movie', avatarUrl: null, count: 22, hours: 19, totalWatchHours: 19 }
-		]
-	};
-
-	let leaderboards = $derived(data?.leaderboards ?? defaultLeaderboards);
 
 	const tabs = [
 		{ id: 'watchers', name: m.leaderboard_top_watch(), desc: m.leaderboard_top_watch_desc(), icon: '🍿' },
@@ -62,10 +24,10 @@
 
 	let currentList = $derived(
 		activeTab === 'watchers'
-			? leaderboards.topWatchers
+			? (data?.leaderboards?.topWatchers ?? [])
 			: activeTab === 'reviewers'
-			? leaderboards.topReviewers
-			: leaderboards.topCommenters
+			? (data?.leaderboards?.topReviewers ?? [])
+			: (data?.leaderboards?.topCommenters ?? [])
 	);
 
 	function getRankStyle(index: number) {

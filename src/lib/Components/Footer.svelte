@@ -3,6 +3,7 @@
 	import { m } from '$lib/paraglide/messages';
 	import { getLocale, localizeHref } from '$lib/paraglide/runtime';
 	import { useLocalStorage } from '$lib/runes/createStore.svelte';
+	import { appFetch } from '$lib/ipc';
 	import ButtonPrimary from './Button/ButtonPrimary.svelte';
 	import LanguageSwitcher from '$lib/Components/Header/LanguageSwitcher.svelte';
 	// const links = [
@@ -179,7 +180,7 @@
 		}
 
 		try {
-			const response = await fetch('/api/subscribe', {
+			const response = await appFetch('/api/subscribe', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json'

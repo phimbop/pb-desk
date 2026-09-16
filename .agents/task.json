@@ -1,32 +1,22 @@
 {
-  "sessionId": "harness-installation-2026-09-15",
-  "title": "Install command evidence runner and AGY driver with regression evals",
+  "sessionId": "d1464ee7-6b98-41d4-8496-8a5c8eb33b6c",
+  "title": "Localize Privacy Policy page for all 17 languages in pb-desk",
   "requirements": [
     {
       "id": "R1",
-      "description": "Real command failures, missing tests and stale or modified evidence cannot pass",
-      "checks": ["harness-acceptance"]
+      "description": "Implement comprehensive multilingual translations for the Privacy Policy page across all 17 supported locales (en, vi, zh, ja, ko, fr, de, es, ru, id, tr, it, pt, hi, pl, nl, be) with dynamic language binding from getLocale()",
+      "checks": ["privacy-multilingual-tests"]
     },
     {
       "id": "R2",
-      "description": "Task requirements reference executable acceptance checks without replacing base gates",
-      "checks": ["harness-acceptance"]
-    },
-    {
-      "id": "R3",
-      "description": "Hook protocol decisions are bounded and workspace scoped; driver rejects unsupported completion claims independently of native hooks",
-      "checks": ["harness-acceptance"]
-    },
-    {
-      "id": "R4",
-      "description": "Installer preserves unrelated hooks and supports removal",
-      "checks": ["harness-acceptance"]
+      "description": "Update src/routes/privacy-policy/+page.svelte to bind reactively to the active locale without hardcoded Vietnamese text while maintaining 100% visual layout parity with web pbv5",
+      "checks": ["privacy-multilingual-tests"]
     }
   ],
   "checks": [
     {
-      "id": "harness-acceptance",
-      "command": ["bun", "test", "scripts/agent"],
+      "id": "privacy-multilingual-tests",
+      "command": ["bun", "test", "scripts/agent/privacy.test.ts"],
       "timeoutMs": 120000,
       "testFormat": "bun"
     }

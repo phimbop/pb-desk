@@ -33,7 +33,7 @@ export const localStorageKey = "PARAGLIDE_LOCALE";
  * @type {Array<"cookie" | "baseLocale" | "globalVariable" | "url" | "preferredLanguage" | "localStorage" | `custom-${string}`>}
  */
 export const strategy = [
-  "url",
+  "localStorage",
   "preferredLanguage",
   "baseLocale"
 ];
@@ -54,81 +54,7 @@ export const routeStrategies = [];
  *
  * @type {Array<{ pattern: string, localized: Array<[Locale, string]> }>}
  */
-export const urlPatterns = [
-  {
-    "pattern": ":protocol://:domain(.*)::port?/:path(.*)?",
-    "localized": [
-      [
-        "vi",
-        ":protocol://:domain(.*)::port?/vi/:path(.*)?"
-      ],
-      [
-        "hi",
-        ":protocol://:domain(.*)::port?/hi/:path(.*)?"
-      ],
-      [
-        "ja",
-        ":protocol://:domain(.*)::port?/ja/:path(.*)?"
-      ],
-      [
-        "ko",
-        ":protocol://:domain(.*)::port?/ko/:path(.*)?"
-      ],
-      [
-        "tr",
-        ":protocol://:domain(.*)::port?/tr/:path(.*)?"
-      ],
-      [
-        "id",
-        ":protocol://:domain(.*)::port?/id/:path(.*)?"
-      ],
-      [
-        "zh",
-        ":protocol://:domain(.*)::port?/zh/:path(.*)?"
-      ],
-      [
-        "ru",
-        ":protocol://:domain(.*)::port?/ru/:path(.*)?"
-      ],
-      [
-        "de",
-        ":protocol://:domain(.*)::port?/de/:path(.*)?"
-      ],
-      [
-        "fr",
-        ":protocol://:domain(.*)::port?/fr/:path(.*)?"
-      ],
-      [
-        "es",
-        ":protocol://:domain(.*)::port?/es/:path(.*)?"
-      ],
-      [
-        "it",
-        ":protocol://:domain(.*)::port?/it/:path(.*)?"
-      ],
-      [
-        "pt",
-        ":protocol://:domain(.*)::port?/pt/:path(.*)?"
-      ],
-      [
-        "pl",
-        ":protocol://:domain(.*)::port?/pl/:path(.*)?"
-      ],
-      [
-        "nl",
-        ":protocol://:domain(.*)::port?/nl/:path(.*)?"
-      ],
-      [
-        "be",
-        ":protocol://:domain(.*)::port?/be/:path(.*)?"
-      ],
-      [
-        "en",
-        ":protocol://:domain(.*)::port?/:path(.*)?"
-      ]
-    ]
-  }
-];
+export const urlPatterns = [];
 /** @type {string | undefined} */
 let cachedRouteStrategyUrl;
 /** @type {{ match: string; strategy?: typeof strategy; exclude?: boolean } | undefined} */
@@ -224,11 +150,11 @@ export function overwriteServerAsyncLocalStorage(value) {
     serverAsyncLocalStorage = value;
 }
 const TREE_SHAKE_COOKIE_STRATEGY_USED = false;
-const TREE_SHAKE_URL_STRATEGY_USED = true;
-const TREE_SHAKE_GLOBAL_VARIABLE_STRATEGY_USED = false;
+const TREE_SHAKE_URL_STRATEGY_USED = false;
+const TREE_SHAKE_GLOBAL_VARIABLE_STRATEGY_USED = true;
 const TREE_SHAKE_PREFERRED_LANGUAGE_STRATEGY_USED = true;
-const TREE_SHAKE_DEFAULT_URL_PATTERN_USED = true;
-const TREE_SHAKE_LOCAL_STORAGE_STRATEGY_USED = false;
+const TREE_SHAKE_DEFAULT_URL_PATTERN_USED = false;
+const TREE_SHAKE_LOCAL_STORAGE_STRATEGY_USED = true;
 
 /** @type {any} */ (globalThis).__paraglide =
 	/** @type {any} */ (globalThis).__paraglide ?? {};
@@ -341,9 +267,13 @@ function resolveLocaleWithStrategies(strategyToUse, urlForUrlStrategy) {
             locale = extractLocaleFromNavigator();
         }
         else if (TREE_SHAKE_LOCAL_STORAGE_STRATEGY_USED &&
-            strat === "localStorage" &&
-            !isServer) {
-            locale = localStorage.getItem(localStorageKey) ?? undefined;
+            strat === "localStorage") {
+            if (typeof localStorage !== "undefined") {
+                locale = localStorage.getItem(localStorageKey) ?? undefined;
+            }
+            if (!locale && _locale !== undefined) {
+                locale = _locale;
+            }
         }
         else if (isCustomStrategy(strat) && customClientStrategies.has(strat)) {
             const handler = customClientStrategies.get(strat);
@@ -531,10 +461,11 @@ export let setLocale = (newLocale, options) => {
             }).href;
         }
         else if (TREE_SHAKE_LOCAL_STORAGE_STRATEGY_USED &&
-            strat === "localStorage" &&
-            typeof window !== "undefined") {
-            // set the localStorage
-            localStorage.setItem(localStorageKey, newLocale);
+            strat === "localStorage") {
+            _locale = newLocale;
+            if (typeof localStorage !== "undefined") {
+                localStorage.setItem(localStorageKey, newLocale);
+            }
         }
         else if (isCustomStrategy(strat) && customClientStrategies.has(strat)) {
             const handler = customClientStrategies.get(strat);
@@ -1474,75 +1405,16 @@ function normalizeUrl(url) {
  * @returns {string} The localized href, relative if input was relative
  */
 export function localizeHref(href, options) {
-    const currentLocale = getLocale();
-    const locale = options?.locale ?? currentLocale;
-    const url = new URL(href, getUrlOrigin());
-    const localized = localizeUrl(url, { locale });
-    // if the origin is identical and the href is relative,
-    // return the relative path
-    if (href.startsWith("/") && url.origin === localized.origin) {
-        // check for cross origin localization in which case an absolute URL must be returned.
-        if (locale !== currentLocale) {
-            const localizedCurrentLocale = localizeUrl(url, {
-                locale: currentLocale,
-            });
-            if (localizedCurrentLocale.origin !== localized.origin) {
-                return localized.href;
-            }
-        }
-        return localized.pathname + localized.search + localized.hash;
-    }
-    return localized.href;
+    return href;
 }
 /**
  * High-level URL de-localization function optimized for client-side UI usage.
- *
- * This is a convenience wrapper around `deLocalizeUrl()` that provides features
- * needed in the UI:
- *
- * - Accepts relative paths (e.g., "/de/about")
- * - Returns relative paths when possible
- * - Handles string input/output instead of URL objects
- *
- * @see https://inlang.com/m/gerre34r/library-inlang-paraglideJs/i18n-routing
- *
- * @example
- * ```typescript
- * // In a React/Vue/Svelte component
- * const LocaleSwitcher = ({ href }) => {
- *   // Remove locale prefix before switching
- *   const baseHref = deLocalizeHref(href);
- *   return locales.map(locale =>
- *     <a href={localizeHref(baseHref, { locale })}>
- *       Switch to {locale}
- *     </a>
- *   );
- * };
- *
- * // Examples:
- * deLocalizeHref("/de/about")  // => "/about"
- * deLocalizeHref("/fr/store")  // => "/store"
- *
- * // Cross-origin links remain absolute
- * deLocalizeHref("https://example.com/de/about")
- * // => "https://example.com/about"
- * ```
- *
- * For server-side URL de-localization (e.g., in middleware), use `deLocalizeUrl()`
- * which provides more precise control over URL handling.
  *
  * @param {string} href - The href to de-localize (can be relative or absolute)
  * @returns {string} The de-localized href, relative if input was relative
  */
 export function deLocalizeHref(href) {
-    const url = new URL(href, getUrlOrigin());
-    const deLocalized = deLocalizeUrl(url);
-    // If the origin is identical and the href is relative,
-    // return the relative path instead of the full URL.
-    if (href.startsWith("/") && url.origin === deLocalized.origin) {
-        return deLocalized.pathname + deLocalized.search + deLocalized.hash;
-    }
-    return deLocalized.href;
+    return href;
 }
 
 /**

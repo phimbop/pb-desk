@@ -113,3 +113,88 @@ export interface WatchingItem {
 	movie: any;
 	watching: number;
 }
+
+export interface LeaderboardUser {
+	userId: string;
+	username: string;
+	avatarUrl: string | null;
+	count: number;
+	hours: number;
+	totalWatchHours: number;
+}
+
+export interface Leaderboards {
+	topWatchers: LeaderboardUser[];
+	topReviewers: LeaderboardUser[];
+	topCommenters: LeaderboardUser[];
+}
+
+export interface AuthUser {
+	id: string;
+	email: string;
+	username: string;
+	avatar_url?: string | null;
+	avatarUrl?: string | null;
+	created_at?: string | null;
+	createdAt?: string | null;
+}
+
+export interface AuthResponse {
+	success: boolean;
+	token?: string | null;
+	user?: AuthUser | null;
+	error?: string | null;
+}
+
+export interface WatchGenre {
+	name: string;
+	count: number;
+}
+
+export interface WatchStats {
+	totalMovies: number;
+	totalHours: number;
+	topGenres: WatchGenre[];
+	ratingsCount: number;
+}
+
+export interface ForwardRequest {
+	method: string;
+	path: string;
+	body?: any;
+	token?: string | null;
+}
+
+export interface ForwardResponse {
+	status: number;
+	body: any;
+	sessionToken?: string | null;
+}
+
+export interface Playlist {
+	id: string;
+	user?: string;
+	name: string;
+	description?: string;
+	public?: boolean;
+	items?: any[];
+	created_at?: string;
+	updated_at?: string;
+}
+
+export interface Notification {
+	id: string;
+	user?: string;
+	sender?: {
+		id: string;
+		username: string;
+		avatar_url?: string | null;
+	} | null;
+	title: string;
+	message: string;
+	link?: string | null;
+	is_read: boolean;
+	created_at: string;
+}
+
+
