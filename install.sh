@@ -526,11 +526,20 @@ install_linux() {
 
     TARGET_BIN="${BIN_DIR}/${BINARY_NAME}"
 
+    # Terminate running instances to ensure clean replacement without file locks
+    if pgrep -f "${REAL_BIN_DIR}" >/dev/null 2>&1; then
+        log_info "Phát hiện ứng dụng ${APP_NAME} đang chạy. Đang giải phóng tiến trình cũ..."
+        pkill -f "${REAL_BIN_DIR}" 2>/dev/null || true
+        sleep 1
+    fi
+
     if [ "$INSTALL_FORMAT" = "native" ]; then
         TARGET_EXEC="${REAL_BIN_DIR}/${BINARY_NAME}.bin"
-        cp "$INSTALLER_PATH" "$TARGET_EXEC"
+        rm -f "$TARGET_EXEC" 2>/dev/null || true
+        cp --remove-destination "$INSTALLER_PATH" "$TARGET_EXEC" 2>/dev/null || cp "$INSTALLER_PATH" "$TARGET_EXEC"
         chmod +x "$TARGET_EXEC"
 
+        rm -f "$TARGET_BIN" 2>/dev/null || true
         cat << 'EOF' > "$TARGET_BIN"
 #!/usr/bin/env bash
 TARGET_REAL="$HOME/.local/lib/phimbop/phimbop.bin"
@@ -540,8 +549,11 @@ EOF
         chmod +x "$TARGET_BIN"
     else
         TARGET_APPIMAGE="${REAL_BIN_DIR}/${BINARY_NAME}.AppImage"
-        cp "$INSTALLER_PATH" "$TARGET_APPIMAGE"
+        rm -f "$TARGET_APPIMAGE" 2>/dev/null || true
+        cp --remove-destination "$INSTALLER_PATH" "$TARGET_APPIMAGE" 2>/dev/null || cp "$INSTALLER_PATH" "$TARGET_APPIMAGE"
         chmod +x "$TARGET_APPIMAGE"
+
+        rm -f "$TARGET_BIN" 2>/dev/null || true
 
         cat << 'EOF' > "$TARGET_BIN"
 #!/usr/bin/env bash

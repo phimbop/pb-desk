@@ -1,24 +1,24 @@
 {
   "sessionId": "015d3e6a-e319-4357-8932-a6c91d9ded13",
-  "title": "Release v0.1.3: Multi-platform build and release via GitHub Actions",
+  "title": "Fix Linux installer Text file busy error when updating running AppImage and ensure safe replacement",
   "requirements": [
     {
       "id": "R1",
-      "description": "Release version bump: Bump version to v0.1.3 across package.json, tauri.conf.json, updater service, About page, and workspace crates",
+      "description": "Installer script hot-replacement: Ensure install.sh unlinks old destination and gracefully stops or replaces running instances without 'Text file busy' error",
       "checks": [
-        "updater-tests"
+        "installer-tests"
       ]
     },
     {
       "id": "R2",
-      "description": "Installer script compatibility: Verify install.sh script and test assertions pass",
+      "description": "Installer tests: Verify install.sh passes all tests in installer_script.test.ts",
       "checks": [
         "installer-tests"
       ]
     },
     {
       "id": "R3",
-      "description": "Rust workspace tests: Ensure Rust workspace crates unit tests pass cleanly",
+      "description": "Rust workspace tests: Ensure pb_service and pb_storage crate tests pass",
       "checks": [
         "rust-tests-check"
       ]

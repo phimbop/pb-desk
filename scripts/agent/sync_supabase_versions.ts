@@ -52,7 +52,7 @@ export async function syncReleaseToSupabase(tag: string) {
 		return false;
 	}
 
-	const manifest: TauriLatestJson = await res.json();
+	const manifest = (await res.json()) as TauriLatestJson;
 	const version = manifest.version.replace(/^v/, '');
 	const channel = 'stable';
 	const releaseNotes = manifest.notes || `PHIMBOP Desktop ${tag}`;

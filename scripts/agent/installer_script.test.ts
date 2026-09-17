@@ -86,4 +86,11 @@ describe("Universal Cross-Platform Install Script (install.sh)", () => {
     expect(content).toContain("LD_PRELOAD");
     expect(content).toContain("WEBKIT_DISABLE_DMABUF_RENDERER");
   });
+
+  test("install.sh handles running instances and unlinks target to prevent Text file busy error", () => {
+    const content = readFileSync(installScriptPath, "utf-8");
+    expect(content).toContain('rm -f "$TARGET_APPIMAGE"');
+    expect(content).toContain('--remove-destination');
+    expect(content).toContain('pkill -f "${REAL_BIN_DIR}"');
+  });
 });
