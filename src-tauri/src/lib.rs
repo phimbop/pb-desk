@@ -394,6 +394,55 @@ fn get_installation_id(state: State<'_, AppState>) -> Result<String, String> {
         .map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+async fn open_external_url(app: tauri::AppHandle, url: String) -> Result<(), String> {
+    if !url.starts_with("http://") && !url.starts_with("https://") {
+        return Err("Only http and https URLs are allowed".to_string());
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        // In Linux AppImage environments (especially with bundled GStreamer/system libs),
+        // child processes like xdg-open (/bin/sh) or gio crash with dynamic symbol lookup errors
+        // (e.g. undefined symbol rl_trim_arg_from_keyseq) unless LD_LIBRARY_PATH & LD_PRELOAD are purged.
+        let mut cmd = std::process::Command::new("xdg-open");
+        cmd.arg(&url)
+            .env_remove("LD_LIBRARY_PATH")
+            .env_remove("LD_PRELOAD")
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null());
+
+        if let Ok(mut child) = cmd.spawn() {
+            tauri::async_runtime::spawn(async move {
+                let _ = child.wait();
+            });
+            return Ok(());
+        }
+
+        let mut gio_cmd = std::process::Command::new("gio");
+        gio_cmd
+            .args(["open", &url])
+            .env_remove("LD_LIBRARY_PATH")
+            .env_remove("LD_PRELOAD")
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null());
+
+        if let Ok(mut child) = gio_cmd.spawn() {
+            tauri::async_runtime::spawn(async move {
+                let _ = child.wait();
+            });
+            return Ok(());
+        }
+    }
+
+    use tauri_plugin_opener::OpenerExt;
+    app.opener()
+        .open_url(&url, None::<&str>)
+        .map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -549,6 +598,7 @@ pub fn run() {
             save_app_settings,
             check_for_movie_updates,
             get_installation_id,
+            open_external_url,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

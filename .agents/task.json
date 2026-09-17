@@ -1,33 +1,51 @@
 {
-  "sessionId": "38ea6595-ca31-43e3-a99a-8d513239107c",
-  "title": "Release v0.1.6 with GStreamer media framework bundled in Linux AppImage",
+  "sessionId": "f3d37465-36c6-4910-83f9-d297bc585af9",
+  "title": "Release v0.1.7: Sanitize opener environment in Linux AppImage and trigger adlink reliably",
   "requirements": [
     {
       "id": "R1",
-      "description": "Enable bundleMediaFramework in tauri.conf.json for Linux AppImage and add full GStreamer codec plugins to release.yml workflow",
+      "description": "Backend provides sanitized open_external_url Tauri command removing LD_LIBRARY_PATH and LD_PRELOAD in Linux AppImage environment",
       "checks": [
-        "media-framework-tests"
+        "adlink-opener-tests"
       ]
     },
     {
       "id": "R2",
-      "description": "Bump all project versions (package.json, tauri.conf.json, Cargo crates, updater service, about page) to v0.1.6",
+      "description": "Frontend opener.ts invokes open_external_url with safe non-recursive fallback to ensure external adlinks open reliably",
       "checks": [
-        "media-framework-tests",
-        "updater-tests"
+        "adlink-opener-tests"
       ]
     },
     {
       "id": "R3",
-      "description": "Verify that sync_supabase_versions script includes v0.1.6 and handles multi-platform release synchronization",
+      "description": "KKPlayer reliably triggers clickAdslink on playback initiation and can-play without requiring duplicate trigger on tenPhimPage detail",
       "checks": [
+        "adlink-opener-tests"
+      ]
+    },
+    {
+      "id": "R4",
+      "description": "Bump version to 0.1.7 across all Cargo crates, package.json, tauri.conf.json, updater service, and about page",
+      "checks": [
+        "version-consistency-tests",
         "updater-tests"
       ]
     }
   ],
   "checks": [
     {
-      "id": "media-framework-tests",
+      "id": "adlink-opener-tests",
+      "command": [
+        "bun",
+        "--no-env-file",
+        "test",
+        "scripts/agent/adlink_opener_issue.test.ts"
+      ],
+      "timeoutMs": 120000,
+      "testFormat": "bun"
+    },
+    {
+      "id": "version-consistency-tests",
       "command": [
         "bun",
         "--no-env-file",

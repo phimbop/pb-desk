@@ -31,6 +31,7 @@
 	let pb = 'b-cdn.net';
 	let pbsv = 'https://pbsvr-s';
 	let lastExecutionTime = 0;
+	let hasTriggeredInitialAd = false;
 	let watchingSessionId = '';
 	let heartbeatInterval: any;
 	let failedSegments = $state<Array<{ start: number; end: number; sn: number }>>([]);
@@ -306,6 +307,9 @@
 						playMovieInfo.duration = duration;
 					}
 					isPlaying.value = playing;
+					if (playing && !paused && !hasTriggeredInitialAd) {
+						triggerInitialAd();
+					}
 					onSeeking(seeking);
 					playerVolume.value = volume;
 					playerMuted.value = muted;
@@ -512,10 +516,18 @@
 		handleProvider(provider);
 	}
 
+	function triggerInitialAd() {
+		if (!hasTriggeredInitialAd) {
+			hasTriggeredInitialAd = true;
+			lastExecutionTime = Date.now();
+			openExternalUrl(clickAdslink);
+		}
+	}
+
 	// We can listen for the `can-play` event to be notified when the player is ready.
 	function onCanPlay(event: MediaCanPlayEvent) {
 		// ...
-		openExternalUrl(clickAdslink);
+		triggerInitialAd();
 	}
 	let intervalId: number | undefined | any;
 	function onSeeking(seeking: boolean) {

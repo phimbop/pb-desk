@@ -68,7 +68,7 @@
 				<div>
 					<p class="text-xs text-slate-400 font-medium">Phiên bản ứng dụng</p>
 					<div class="flex items-center gap-2 mt-0.5">
-						<span class="text-base font-bold text-white">v0.1.6</span>
+						<span class="text-base font-bold text-white">v0.1.7</span>
 						<span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-neonPink-500/15 text-neonPink-400 border border-neonPink-500/30">
 							Desktop
 						</span>

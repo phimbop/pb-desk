@@ -1,5 +1,10 @@
-import { isTauri as isTauriCore } from '@tauri-apps/api/core';
+import { invoke, isTauri as isTauriCore } from '@tauri-apps/api/core';
 import { openUrl } from '@tauri-apps/plugin-opener';
+
+let originalWindowOpen: typeof window.open | null = null;
+if (typeof window !== 'undefined') {
+	originalWindowOpen = window.open;
+}
 
 /**
  * Checks whether the app is currently running inside the Tauri desktop webview.
@@ -11,23 +16,31 @@ export const isTauriEnv = (): boolean => {
 
 /**
  * Opens an external URL in the system's default web browser.
- * Uses `@tauri-apps/plugin-opener` when running in a Tauri desktop environment,
- * falling back to `window.open` in a standard browser.
+ * Uses sanitized Tauri command `open_external_url` when running in desktop AppImage/Tauri,
+ * falling back to `@tauri-apps/plugin-opener` and `originalWindowOpen` in browsers.
  */
 export async function openExternalUrl(url: string | URL): Promise<void> {
 	if (!url) return;
 	const targetUrl = url.toString();
-	try {
-		if (isTauriEnv()) {
-			await openUrl(targetUrl);
+	if (isTauriEnv()) {
+		try {
+			// Prioritize sanitized backend command which clears LD_LIBRARY_PATH & LD_PRELOAD in Linux AppImage
+			await invoke('open_external_url', { url: targetUrl });
 			return;
+		} catch (invokeErr) {
+			console.warn('[Opener] invoke(open_external_url) failed, trying openUrl fallback:', invokeErr);
+			try {
+				await openUrl(targetUrl);
+				return;
+			} catch (openerErr) {
+				console.warn('[Opener] openUrl fallback failed:', openerErr);
+			}
 		}
-	} catch (err) {
-		console.warn('[Opener] Failed to open external URL via Tauri opener:', err);
 	}
 
 	if (typeof window !== 'undefined') {
-		window.open(targetUrl, '_blank', 'noopener,noreferrer');
+		const rawOpen = originalWindowOpen || window.open;
+		rawOpen.call(window, targetUrl, '_blank', 'noopener,noreferrer');
 	}
 }
 
@@ -41,8 +54,12 @@ export function setupGlobalOpener(): void {
 	if (typeof window === 'undefined' || isGlobalOpenerInitialized) return;
 	isGlobalOpenerInitialized = true;
 
+	if (!originalWindowOpen) {
+		originalWindowOpen = window.open;
+	}
+	const originalOpen = originalWindowOpen;
+
 	// Intercept window.open
-	const originalOpen = window.open;
 	window.open = (url?: string | URL, target?: string, features?: string) => {
 		if (url && isTauriEnv()) {
 			openExternalUrl(url).catch((err) => {
