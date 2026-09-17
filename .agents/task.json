@@ -1,24 +1,24 @@
 {
-  "sessionId": "15d0cebb-08a1-420e-b10d-593b3fc0ac18",
-  "title": "Release v0.1.2: AppImage universal launcher wrapper with host library compatibility",
+  "sessionId": "015d3e6a-e319-4357-8932-a6c91d9ded13",
+  "title": "Release v0.1.3: Multi-platform build and release via GitHub Actions",
   "requirements": [
     {
       "id": "R1",
-      "description": "Universal launcher wrapper: Add host library preload (Wayland, GLib, PCRE2) in install.sh and verify installer tests pass",
-      "checks": [
-        "installer-tests"
-      ]
-    },
-    {
-      "id": "R2",
-      "description": "Release version bump: Bump version to v0.1.2 across package.json, tauri.conf.json, updater service, and workspace crates",
+      "description": "Release version bump: Bump version to v0.1.3 across package.json, tauri.conf.json, updater service, About page, and workspace crates",
       "checks": [
         "updater-tests"
       ]
     },
     {
+      "id": "R2",
+      "description": "Installer script compatibility: Verify install.sh script and test assertions pass",
+      "checks": [
+        "installer-tests"
+      ]
+    },
+    {
       "id": "R3",
-      "description": "Rust and workspace tests: Ensure Rust crate unit tests pass cleanly",
+      "description": "Rust workspace tests: Ensure Rust workspace crates unit tests pass cleanly",
       "checks": [
         "rust-tests-check"
       ]
