@@ -15,21 +15,29 @@
 	let tmdbPopularPageStore = useLocalStorage<number>('tmdbPopularPage', 1);
 	let currentPage = $state(tmdbPopularPageStore.value);
 	let loading = $state(false);
+	let lastFetchedPage = $state<number | null>(null);
 	let mounted = $state(false);
 	onMount(() => {
 		mounted = true;
 	});
-	const handlePageChange = async (page: number) => {
+	const handlePageChange = async (targetPage: number) => {
+		if (loading) return;
 		loading = true;
-		const movieList: TmdbMovies = await moviesHandler.tmdbGetMovies('upcoming', page, getLocale());
-		movies = movieList ?? { results: [], total_pages: 0 };
-		tmdbPopularPageStore.value = page;
-		loading = false;
+		lastFetchedPage = targetPage;
+		try {
+			const movieList: TmdbMovies = await moviesHandler.tmdbGetMovies('upcoming', targetPage, getLocale());
+			movies = movieList ?? { results: [], total_pages: 0, page: targetPage };
+			tmdbPopularPageStore.value = targetPage;
+		} catch (e) {
+			console.error('Failed to fetch upcoming movies:', e);
+		} finally {
+			loading = false;
+		}
 	};
 	$effect(() => {
-		if (mounted && currentPage) {
-			const loadedPage = movies?.page ?? 0;
-			if (currentPage !== loadedPage || !movies?.results?.length) {
+		if (mounted && currentPage && !loading && lastFetchedPage !== currentPage) {
+			const loadedPage = movies?.page;
+			if (currentPage !== loadedPage || (!movies?.results?.length && lastFetchedPage === null)) {
 				handlePageChange(currentPage);
 			}
 		}

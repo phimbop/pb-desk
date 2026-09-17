@@ -1,23 +1,32 @@
 {
-  "sessionId": "015d3e6a-e319-4357-8932-a6c91d9ded13",
-  "title": "Fix in-app update check failure by supplying Supabase authentication headers and resilient error handling",
+  "sessionId": "737731a7-29b9-43c5-b66b-d44a43908b0a",
+  "title": "Fix KKPlayer video streaming in production build and fix TMDB movie loading and slow loading in phim-moi and should watch",
   "requirements": [
     {
       "id": "R1",
-      "description": "Updater authentication headers: updater service and Tauri Rust builder attach apikey and Authorization headers to check requests",
+      "description": "CSP connect-src configuration: Allow HTTPS streaming CDNs (b-cdn.net and https:) so HLS.js in KKPlayer can fetch playlists and segments",
       "checks": [
-        "updater-tests"
+        "media-and-tmdb-tests",
+        "production-blockers-tests"
       ]
     },
     {
       "id": "R2",
-      "description": "Installer script compatibility: Verify install.sh script and tests pass",
+      "description": "CI release workflow credentials: Pass TMDB_READ_ACCESS_TOKEN, SUPABASE_URL, SUPABASE_ANON_KEY to tauri-action build step",
       "checks": [
-        "installer-tests"
+        "media-and-tmdb-tests",
+        "ci-workflow-tests"
       ]
     },
     {
       "id": "R3",
+      "description": "TMDB token fallback & infinite loop fix: Provide fallback token for TMDB API and guard against infinite re-fetching in TabPhimMoi and TabNenXem",
+      "checks": [
+        "media-and-tmdb-tests"
+      ]
+    },
+    {
+      "id": "R4",
       "description": "Rust workspace tests: Ensure pb_service and pb_storage crate tests pass",
       "checks": [
         "rust-tests-check"
@@ -26,12 +35,34 @@
   ],
   "checks": [
     {
-      "id": "installer-tests",
+      "id": "media-and-tmdb-tests",
       "command": [
         "bun",
         "--no-env-file",
         "test",
-        "scripts/agent/installer_script.test.ts"
+        "scripts/agent/production_media_and_tmdb.test.ts"
+      ],
+      "timeoutMs": 120000,
+      "testFormat": "bun"
+    },
+    {
+      "id": "production-blockers-tests",
+      "command": [
+        "bun",
+        "--no-env-file",
+        "test",
+        "scripts/agent/production_blockers.test.ts"
+      ],
+      "timeoutMs": 120000,
+      "testFormat": "bun"
+    },
+    {
+      "id": "ci-workflow-tests",
+      "command": [
+        "bun",
+        "--no-env-file",
+        "test",
+        "scripts/agent/ci_workflow.test.ts"
       ],
       "timeoutMs": 120000,
       "testFormat": "bun"
@@ -48,17 +79,6 @@
       ],
       "timeoutMs": 120000,
       "testFormat": "cargo"
-    },
-    {
-      "id": "updater-tests",
-      "command": [
-        "bun",
-        "--no-env-file",
-        "test",
-        "scripts/agent/updater.test.ts"
-      ],
-      "timeoutMs": 120000,
-      "testFormat": "bun"
     }
   ]
 }

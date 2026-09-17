@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "PHIMBOP",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "identifier": "com.phimbop.desktop",
   "build": {
     "beforeDevCommand": "bun run dev",
@@ -24,8 +24,8 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self' ipc: http://ipc.localhost; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; media-src 'self' https: blob: data:; connect-src 'self' ipc: http://ipc.localhost https://nhxgdsanykpnmghtohfz.supabase.co https://phimapi.com https://v3.phimbop.cfd https://api.themoviedb.org https://vidsrc.me; font-src 'self' data:; frame-src 'self' https://player.phimbop.top https://player.videasy.net https://vidfast.pro;",
-      "devCsp": "default-src 'self' ipc: http://ipc.localhost; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; media-src 'self' https: blob: data:; connect-src 'self' ipc: http://ipc.localhost https://nhxgdsanykpnmghtohfz.supabase.co https://phimapi.com https://v3.phimbop.cfd https://api.themoviedb.org https://vidsrc.me http://localhost:1420 ws://localhost:1420; font-src 'self' data:; frame-src 'self' https://player.phimbop.top https://player.videasy.net https://vidfast.pro;",
+      "csp": "default-src 'self' ipc: http://ipc.localhost; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; media-src 'self' https: blob: data:; connect-src 'self' ipc: http://ipc.localhost https://nhxgdsanykpnmghtohfz.supabase.co https://phimapi.com https://v3.phimbop.cfd https://api.themoviedb.org https://vidsrc.me https://*.b-cdn.net https:; font-src 'self' data:; frame-src 'self' https://player.phimbop.top https://player.videasy.net https://vidfast.pro;",
+      "devCsp": "default-src 'self' ipc: http://ipc.localhost; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; media-src 'self' https: blob: data:; connect-src 'self' ipc: http://ipc.localhost https://nhxgdsanykpnmghtohfz.supabase.co https://phimapi.com https://v3.phimbop.cfd https://api.themoviedb.org https://vidsrc.me https://*.b-cdn.net https: http://localhost:1420 ws://localhost:1420; font-src 'self' data:; frame-src 'self' https://player.phimbop.top https://player.videasy.net https://vidfast.pro;",
       "capabilities": ["default"]
     }
   },

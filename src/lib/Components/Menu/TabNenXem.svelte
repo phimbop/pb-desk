@@ -10,21 +10,29 @@
 	import { onMount } from 'svelte';
 	let movies = $state(page.data.topRatedMovies ?? { results: [], total_pages: 0 });
 	let currentPageTopRated = $state(page.data.topRatedMovies?.page ?? 1);
-	let loading = false;
+	let loading = $state(false);
 	let mounted = $state(false);
+	let lastFetchedPage = $state<number | null>(null);
 	onMount(() => {
 		mounted = true;
 	});
-	const handlePageChange = async (page: number) => {
+	const handlePageChange = async (targetPage: number) => {
+		if (loading) return;
 		loading = true;
-		const movieList: TmdbMovies = await moviesHandler.tmdbGetTopRateMovies(page, getLocale());
-		movies = movieList ?? { results: [], total_pages: 0 };
-		loading = false;
+		lastFetchedPage = targetPage;
+		try {
+			const movieList: TmdbMovies = await moviesHandler.tmdbGetTopRateMovies(targetPage, getLocale());
+			movies = movieList ?? { results: [], total_pages: 0, page: targetPage };
+		} catch (e) {
+			console.error('Failed to fetch top rated movies:', e);
+		} finally {
+			loading = false;
+		}
 	};
 	$effect(() => {
-		if (mounted && currentPageTopRated) {
-			const loadedPage = movies?.page ?? 0;
-			if (currentPageTopRated !== loadedPage || !movies?.results?.length) {
+		if (mounted && currentPageTopRated && !loading && lastFetchedPage !== currentPageTopRated) {
+			const loadedPage = movies?.page;
+			if (currentPageTopRated !== loadedPage || (!movies?.results?.length && lastFetchedPage === null)) {
 				handlePageChange(currentPageTopRated);
 			}
 		}

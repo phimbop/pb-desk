@@ -49,8 +49,13 @@ export interface TmdbActorDetail {
 	};
 }
 
+import { TMDB_READ_ACCESS_TOKEN_FALLBACK } from '$lib';
+
 const getToken = (): string => {
-	return (process.env.TMDB_READ_ACCESS_TOKEN as string) || '';
+	return (
+		(typeof process !== 'undefined' && process.env?.TMDB_READ_ACCESS_TOKEN) ||
+		TMDB_READ_ACCESS_TOKEN_FALLBACK
+	);
 };
 
 const getHeaders = () => {

@@ -52,11 +52,14 @@ export const getTmdbUrl = (path: string) => {
 	return `https://api.themoviedb.org/3/${cleanPath}`;
 };
 
+export const TMDB_READ_ACCESS_TOKEN_FALLBACK =
+	'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJhYmE4NThiZjllMmU5NTdkNDViZTc3YTIwM2I4NGYwNCIsInN1YiI6IjY0OGMyMzZiYzNjODkxMDEyZDVjYjU3ZSIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.S4fccGjfoALSIX9ra2YBljhPwCI5_8sQcdx_iQjC_gs';
+
 export const getTmdbHeaders = (): Record<string, string> => {
 	const token =
 		(globalThis as any).TMDB_READ_ACCESS_TOKEN ||
-		(process.env.TMDB_READ_ACCESS_TOKEN as string) ||
-		'';
+		(typeof process !== 'undefined' && process.env?.TMDB_READ_ACCESS_TOKEN) ||
+		TMDB_READ_ACCESS_TOKEN_FALLBACK;
 	return {
 		accept: 'application/json',
 		...(token ? { Authorization: `Bearer ${token}` } : {})
