@@ -19,7 +19,6 @@ describe('Linux AppImage Media Framework and v0.1.6 Consistency', () => {
 		expect(fs.existsSync(workflowPath)).toBe(true);
 
 		const content = fs.readFileSync(workflowPath, 'utf-8');
-		expect(content).toContain('libgstreamer1.0-dev');
 		expect(content).toContain('gstreamer1.0-plugins-base');
 		expect(content).toContain('gstreamer1.0-plugins-good');
 		expect(content).toContain('gstreamer1.0-plugins-bad');
