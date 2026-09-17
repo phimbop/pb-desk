@@ -77,6 +77,7 @@ Tùy chọn:
   --version <tag>    Cài đặt phiên bản cụ thể (ví dụ: v0.1.0)
   --deb              (Linux) Ưu tiên cài đặt gói .deb (dành cho Ubuntu/Debian)
   --appimage         (Linux) Cài đặt định dạng di động AppImage (mặc định)
+  --native           (Linux) Cài đặt trực tiếp từ bản build native cục bộ (target/release)
   --dry-run          Chạy thử nghiệm kiểm tra hệ thống, không thay đổi tệp tin
   --uninstall        Gỡ cài đặt PHIMBOP khỏi hệ thống
   -h, --help         Hiển thị hướng dẫn này
@@ -97,6 +98,10 @@ while [ $# -gt 0 ]; do
             ;;
         --appimage)
             INSTALL_FORMAT="appimage"
+            shift
+            ;;
+        --native)
+            INSTALL_FORMAT="native"
             shift
             ;;
         --dry-run)
@@ -253,19 +258,53 @@ fetch_release_info() {
     fi
 
     log_info "Đang kiểm tra thông tin phát hành từ GitHub (${api_url})..."
-    RELEASE_JSON=$(curl -sL -H "Accept: application/vnd.github.v3+json" "$api_url" 2>/dev/null || echo "")
 
-    if echo "$RELEASE_JSON" | grep -q '"message": "Not Found"'; then
-        return 1
+    local token="${GITHUB_TOKEN:-${GH_TOKEN:-}}"
+    if [ -z "$token" ] && command -v gh >/dev/null 2>&1; then
+        token=$(gh auth token 2>/dev/null || true)
     fi
 
-    TAG_NAME=$(echo "$RELEASE_JSON" | grep -m1 '"tag_name":' | sed -E 's/.*"tag_name":[[:space:]]*"([^"]+)".*/\1/' || true)
-    if [ -z "$TAG_NAME" ]; then
-        return 1
+    local auth_header=""
+    if [ -n "$token" ]; then
+        auth_header="Authorization: Bearer $token"
     fi
 
-    log_info "Tìm thấy phiên bản phát hành: ${BOLD}${TAG_NAME}${NC}"
-    return 0
+    if [ -n "$auth_header" ]; then
+        RELEASE_JSON=$(curl -sL -H "$auth_header" -H "Accept: application/vnd.github.v3+json" "$api_url" 2>/dev/null || echo "")
+    else
+        RELEASE_JSON=$(curl -sL -H "Accept: application/vnd.github.v3+json" "$api_url" 2>/dev/null || echo "")
+    fi
+
+    if echo "$RELEASE_JSON" | grep -q '"browser_download_url"'; then
+        TAG_NAME=$(echo "$RELEASE_JSON" | grep -m1 '"tag_name":' | sed -E 's/.*"tag_name":[[:space:]]*"([^"]+)".*/\1/' || true)
+        if [ -n "$TAG_NAME" ]; then
+            log_info "Tìm thấy phiên bản phát hành: ${BOLD}${TAG_NAME}${NC}"
+            return 0
+        fi
+    fi
+
+    # Fallback to direct releases redirect if API is rate-limited or unavailable
+    local latest_tag=""
+    if [ -n "$TARGET_VERSION" ]; then
+        latest_tag="$TARGET_VERSION"
+    else
+        local redirect_url
+        redirect_url=$(curl -s -o /dev/null -w "%{url_effective}" -L "https://github.com/${REPO}/releases/latest" 2>/dev/null || true)
+        latest_tag=$(basename "$redirect_url" 2>/dev/null || true)
+    fi
+
+    if [ -n "$latest_tag" ] && [ "$latest_tag" != "latest" ]; then
+        local release_html
+        release_html=$(curl -sL "https://github.com/${REPO}/releases/expanded_assets/${latest_tag}" 2>/dev/null || true)
+        if echo "$release_html" | grep -q "/releases/download/"; then
+            RELEASE_JSON=$(echo "$release_html" | grep -o 'href="[^"]*"' | sed 's/href="/https:\/\/github.com/' | tr -d '"' | grep "/releases/download/" || echo "")
+            TAG_NAME="$latest_tag"
+            log_info "Tìm thấy phiên bản phát hành: ${BOLD}${TAG_NAME}${NC}"
+            return 0
+        fi
+    fi
+
+    return 1
 }
 
 get_download_url() {
@@ -379,7 +418,19 @@ install_linux() {
     local local_file=""
     local target_ext=""
 
-    if [ "$INSTALL_FORMAT" = "deb" ]; then
+    if [ "$INSTALL_FORMAT" = "native" ]; then
+        if [ -f "target/release/pb-desk" ]; then
+            local_file="target/release/pb-desk"
+        elif [ -f "src-tauri/target/release/pb-desk" ]; then
+            local_file="src-tauri/target/release/pb-desk"
+        fi
+        if [ -z "$local_file" ]; then
+            log_error "Không tìm thấy file build native release (target/release/pb-desk)."
+            log_info "Gợi ý: Chạy 'cargo build --release' trước khi dùng tùy chọn --native."
+            exit 1
+        fi
+        log_info "Sử dụng bản build native release: $local_file"
+    elif [ "$INSTALL_FORMAT" = "deb" ]; then
         target_ext="deb"
         pattern="(amd64|x86_64)[^\"]*\.deb"
     else
@@ -388,12 +439,12 @@ install_linux() {
     fi
 
     # Check online release
-    if fetch_release_info; then
+    if [ "$INSTALL_FORMAT" != "native" ] && fetch_release_info; then
         download_url=$(get_download_url "$pattern")
     fi
 
     # Fallback to AppImage if deb not found, or vice-versa
-    if [ -z "$download_url" ] && fetch_release_info; then
+    if [ "$INSTALL_FORMAT" != "native" ] && [ -z "$download_url" ] && fetch_release_info; then
         if [ "$INSTALL_FORMAT" = "deb" ]; then
             log_warn "Không tìm thấy gói .deb, chuyển sang AppImage..."
             INSTALL_FORMAT="appimage"
@@ -402,8 +453,8 @@ install_linux() {
         fi
     fi
 
-    # Check local build bundle fallback
-    if [ -z "$download_url" ]; then
+    # Check local build bundle fallback if online is not available
+    if [ "$INSTALL_FORMAT" != "native" ] && [ -z "$download_url" ] && [ -z "$local_file" ]; then
         local_file=$(find_local_bundle "*.$target_ext" || true)
         if [ -n "$local_file" ]; then
             log_info "Tìm thấy tệp cài đặt cục bộ: $local_file"
@@ -413,6 +464,14 @@ install_linux() {
             if [ -n "$local_file" ]; then
                 INSTALL_FORMAT="appimage"
                 log_info "Tìm thấy tệp AppImage cục bộ: $local_file"
+            elif [ -f "target/release/pb-desk" ]; then
+                local_file="target/release/pb-desk"
+                INSTALL_FORMAT="native"
+                log_info "Tìm thấy bản build native cục bộ: $local_file"
+            elif [ -f "src-tauri/target/release/pb-desk" ]; then
+                local_file="src-tauri/target/release/pb-desk"
+                INSTALL_FORMAT="native"
+                log_info "Tìm thấy bản build native cục bộ: $local_file"
             elif [ "$DRY_RUN" = true ]; then
                 log_warn "[DRY-RUN] Không tìm thấy tệp release online hoặc local build. Giả lập kế hoạch cài đặt..."
                 log_success "[DRY-RUN] Kiểm tra hoàn tất. Script sẽ tải gói ${INSTALL_FORMAT^^} (${ARCH}) và thiết lập desktop launcher tại ~/.local/share/applications/phimbop.desktop."
@@ -498,7 +557,7 @@ install_linux() {
 Name=${APP_NAME}
 GenericName=Movie Streaming Player
 Comment=Ứng dụng xem phim desktop đa nền tảng
-Exec=${TARGET_BIN} %U
+Exec=env WEBKIT_DISABLE_DMABUF_RENDERER=1 ${TARGET_BIN} %U
 Icon=${TARGET_ICON}
 Terminal=false
 Type=Application

@@ -440,8 +440,13 @@ pub fn run() {
             let auth_service = AuthService::new(surreal_client.clone());
             let notification_worker = NotificationWorker::new(Arc::clone(&storage), api_client);
 
-            // Setup System Tray
-            let _ = tray::setup_tray(app.handle());
+            // Setup System Tray safely (so any libappindicator failure on Linux never crashes the app)
+            let app_handle_for_tray = app.handle().clone();
+            let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                if let Err(e) = tray::setup_tray(&app_handle_for_tray) {
+                    eprintln!("[WARN] System tray setup failed: {e}");
+                }
+            }));
 
             // Check if launched with --minimized flag (e.g. from Autostart)
             let args: Vec<String> = std::env::args().collect();

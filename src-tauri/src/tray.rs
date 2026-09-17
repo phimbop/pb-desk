@@ -11,9 +11,9 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     let menu = Menu::with_items(app, &[&show_item, &check_item, &quit_item])?;
 
     let builder = if let Some(icon) = app.default_window_icon().cloned() {
-        TrayIconBuilder::with_id("main-tray").icon(icon)
+        TrayIconBuilder::with_id("phimbop-tray").icon(icon)
     } else {
-        TrayIconBuilder::with_id("main-tray")
+        TrayIconBuilder::with_id("phimbop-tray")
     };
 
     let _tray = builder

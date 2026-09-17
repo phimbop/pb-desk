@@ -1,53 +1,53 @@
 {
-  "sessionId": "5fb40859-a34a-4618-bd69-507ca866bf2f",
-  "title": "Sửa các điểm chặn production theo audit của Union Alpha: SQLite persistence, Updater artifacts, CSP iframe playback",
+  "sessionId": "2b9fa33c-ad49-49e7-87ec-a19e61b77ee0",
+  "title": "Fix desktop menu icon, isolate tray ID from rustsale collision, and eliminate Linux crash",
   "requirements": [
     {
       "id": "R1",
-      "description": "P1 Dữ liệu: Xử lý lỗi persistence rõ ràng, không fallback RAM âm thầm; bảo toàn DB gốc, kiểm tra lỗi mở DB và persistence qua restart",
+      "description": "Desktop menu icon and launcher: Deploy multi-size icons, pixmaps, absolute icon path in phimbop.desktop, and reload desktop databases",
       "checks": [
-        "sqlite-persistence-rust",
-        "production-blockers-evals"
+        "installer-tests"
       ]
     },
     {
       "id": "R2",
-      "description": "P1 Updater: Bật bundle.createUpdaterArtifacts=true trong tauri.conf.json đúng Tauri v2, xác minh CI signing key",
+      "description": "Tray ID isolation & crash prevention: Isolate tray ID to phimbop-tray, wrap setup in catch_unwind, set WEBKIT_DISABLE_DMABUF_RENDERER, and verify Rust checks",
       "checks": [
-        "production-blockers-evals"
+        "rust-tests-check"
       ]
     },
     {
       "id": "R3",
-      "description": "Playback CSP: Bổ sung frame-src tối thiểu cho iframe player của CardVideoPlay.svelte, không wildcard, không remote IPC",
+      "description": "Universal installer script: Support --native flag, ensure proper CLI flag precedence (--deb/--appimage), and rate-limit proof release fetching",
       "checks": [
-        "production-blockers-evals"
+        "installer-tests"
       ]
     }
   ],
   "checks": [
     {
-      "id": "sqlite-persistence-rust",
-      "command": [
-        "cargo",
-        "test",
-        "-p",
-        "pb_storage",
-        "test_sqlite_file_persistence_across_restarts"
-      ],
-      "timeoutMs": 120000,
-      "testFormat": "cargo"
-    },
-    {
-      "id": "production-blockers-evals",
+      "id": "installer-tests",
       "command": [
         "bun",
         "--no-env-file",
         "test",
-        "scripts/agent/production_blockers.test.ts"
+        "scripts/agent/installer_script.test.ts"
       ],
       "timeoutMs": 120000,
       "testFormat": "bun"
+    },
+    {
+      "id": "rust-tests-check",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "pb_service",
+        "-p",
+        "pb_storage"
+      ],
+      "timeoutMs": 120000,
+      "testFormat": "cargo"
     }
   ]
 }
