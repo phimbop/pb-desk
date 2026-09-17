@@ -180,7 +180,7 @@ class UpdaterService {
 				return false;
 			}
 
-			const currentVersion = '0.1.0';
+			const currentVersion = '0.1.1';
 			const { data: latest } = await supabase
 				.from('app_versions')
 				.select('*')

@@ -1,6 +1,6 @@
 {
   "sessionId": "2b9fa33c-ad49-49e7-87ec-a19e61b77ee0",
-  "title": "Fix desktop menu icon, isolate tray ID from rustsale collision, and eliminate Linux crash",
+  "title": "Release new version v0.1.1 and trigger GitHub Actions release workflow",
   "requirements": [
     {
       "id": "R1",
@@ -21,6 +21,13 @@
       "description": "Universal installer script: Support --native flag, ensure proper CLI flag precedence (--deb/--appimage), and rate-limit proof release fetching",
       "checks": [
         "installer-tests"
+      ]
+    },
+    {
+      "id": "R4",
+      "description": "Release version bump: Bump version to v0.1.1 across package.json, tauri.conf.json, and workspace crates",
+      "checks": [
+        "updater-tests"
       ]
     }
   ],
@@ -48,6 +55,17 @@
       ],
       "timeoutMs": 120000,
       "testFormat": "cargo"
+    },
+    {
+      "id": "updater-tests",
+      "command": [
+        "bun",
+        "--no-env-file",
+        "test",
+        "scripts/agent/updater.test.ts"
+      ],
+      "timeoutMs": 120000,
+      "testFormat": "bun"
     }
   ]
 }

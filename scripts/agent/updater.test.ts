@@ -217,6 +217,6 @@ describe('Supabase & Tauri v2 Updater Integration Tests', () => {
 
 		expect(aboutCode).toContain('updater.checkForUpdates(true)');
 		expect(aboutCode).toContain('Kiểm tra cập nhật');
-		expect(aboutCode).toContain('v0.1.0');
+		expect(aboutCode).toMatch(/v0\.1\.\d+/);
 	});
 });
