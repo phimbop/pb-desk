@@ -68,4 +68,13 @@ describe("Universal Cross-Platform Install Script (install.sh)", () => {
     expect(content).toContain("Name=${APP_NAME}");
     expect(content).toContain(".local/share/applications");
   });
+
+  test("install.sh resolves download URLs without matching .sig signatures", () => {
+    const res = spawnSync("bash", [installScriptPath, "--dry-run"]);
+    expect(res.status).toBe(0);
+    const output = res.stdout.toString();
+    expect(output).toContain("https://github.com/phimbop/pb-desk/releases/download/");
+    expect(output).toContain(".AppImage");
+    expect(output).not.toContain(".AppImage.sig");
+  });
 });

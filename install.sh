@@ -231,6 +231,7 @@ find_local_bundle() {
 }
 
 fetch_release_info() {
+    [ -n "$RELEASE_JSON" ] && return 0
     need_cmd curl
     local api_url
     if [ -n "$TARGET_VERSION" ]; then
@@ -257,7 +258,7 @@ fetch_release_info() {
 
 get_download_url() {
     local pattern="$1"
-    echo "$RELEASE_JSON" | grep -o "https://[^\"]*${pattern}[^\"]*" | head -n 1 || true
+    echo "$RELEASE_JSON" | grep -v "\.sig" | grep -E -o "https://[^\"]*${pattern}" | head -n 1 || true
 }
 
 install_macos() {
@@ -268,9 +269,9 @@ install_macos() {
     local match_pattern=""
 
     if [ "$ARCH" = "aarch64" ]; then
-        match_pattern="aarch64.*\.dmg"
+        match_pattern="aarch64[^\"]*\.dmg"
     else
-        match_pattern="(x64|x86_64).*\.dmg"
+        match_pattern="(x64|x86_64)[^\"]*\.dmg"
     fi
 
     # Check online release
@@ -278,7 +279,7 @@ install_macos() {
         dmg_url=$(get_download_url "$match_pattern")
         if [ -z "$dmg_url" ] && [ "$ARCH" = "aarch64" ]; then
             log_warn "Không tìm thấy bản native Apple Silicon, kiểm tra bản x64 (Rosetta 2)..."
-            dmg_url=$(get_download_url "(x64|x86_64).*\.dmg")
+            dmg_url=$(get_download_url "(x64|x86_64)[^\"]*\.dmg")
         fi
     fi
 
@@ -299,6 +300,7 @@ install_macos() {
     fi
 
     if [ "$DRY_RUN" = true ]; then
+        log_info "Tệp cài đặt: ${BOLD}${dmg_url:-$local_dmg}${NC}"
         log_success "[DRY-RUN] Kiểm tra hoàn tất. Script sẽ tải và cài đặt ${APP_NAME}.app vào /Applications."
         return 0
     fi
@@ -367,10 +369,10 @@ install_linux() {
 
     if [ "$INSTALL_FORMAT" = "deb" ]; then
         target_ext="deb"
-        pattern="(amd64|x86_64).*\.deb"
+        pattern="(amd64|x86_64)[^\"]*\.deb"
     else
         target_ext="AppImage"
-        pattern="(amd64|x86_64).*\.AppImage"
+        pattern="(amd64|x86_64)[^\"]*\.AppImage"
     fi
 
     # Check online release
@@ -383,7 +385,7 @@ install_linux() {
         if [ "$INSTALL_FORMAT" = "deb" ]; then
             log_warn "Không tìm thấy gói .deb, chuyển sang AppImage..."
             INSTALL_FORMAT="appimage"
-            pattern="(amd64|x86_64).*\.AppImage"
+            pattern="(amd64|x86_64)[^\"]*\.AppImage"
             download_url=$(get_download_url "$pattern")
         fi
     fi
@@ -412,6 +414,7 @@ install_linux() {
     fi
 
     if [ "$DRY_RUN" = true ]; then
+        log_info "Tệp cài đặt: ${BOLD}${download_url:-$local_file}${NC}"
         log_success "[DRY-RUN] Kiểm tra hoàn tất. Định dạng sẽ cài đặt: ${INSTALL_FORMAT^^}."
         return 0
     fi
