@@ -65,6 +65,7 @@ serve(async (req: Request) => {
   try {
     const url = new URL(req.url);
     const target = url.searchParams.get("target")?.trim();
+    const arch = url.searchParams.get("arch")?.trim();
     const currentVersion = url.searchParams.get("current_version")?.trim() || "0.0.0";
     const channel = url.searchParams.get("channel")?.trim() || "stable";
     const installationId =
@@ -89,11 +90,39 @@ serve(async (req: Request) => {
 
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-    // Lấy danh sách các bản phát hành active cho target và channel
+    // Build candidate targets for database lookup
+    const targetLower = target.toLowerCase();
+    const candidateTargets = new Set<string>();
+    candidateTargets.add(target);
+    candidateTargets.add(targetLower);
+
+    if (targetLower === "linux" || targetLower.startsWith("linux-")) {
+      candidateTargets.add("linux");
+      candidateTargets.add("linux-x86_64");
+      candidateTargets.add("linux-x86_64-appimage");
+      candidateTargets.add("linux-x86_64-deb");
+    } else if (targetLower === "windows" || targetLower.startsWith("windows-")) {
+      candidateTargets.add("windows");
+      candidateTargets.add("windows-x86_64");
+      candidateTargets.add("windows-x86_64-nsis");
+      candidateTargets.add("windows-x86_64-msi");
+    } else if (targetLower === "darwin" || targetLower.startsWith("darwin-")) {
+      candidateTargets.add("darwin");
+      if (arch === "x86_64") {
+        candidateTargets.add("darwin-x86_64");
+        candidateTargets.add("darwin-x86_64-app");
+      } else {
+        candidateTargets.add("darwin-aarch64");
+        candidateTargets.add("darwin-aarch64-app");
+        candidateTargets.add("darwin-x86_64");
+      }
+    }
+
+    // Lấy danh sách các bản phát hành active cho candidate targets và channel
     const { data: releases, error } = await supabase
       .from("app_versions")
       .select("*")
-      .eq("target", target)
+      .in("target", Array.from(candidateTargets))
       .eq("channel", channel)
       .eq("is_active", true);
 
@@ -142,17 +171,58 @@ serve(async (req: Request) => {
       : false;
     const isCritical = latest.is_critical || isUnderMinVersion;
 
+    // Lấy tất cả records cho phiên bản này để tạo platforms dictionary đầy đủ
+    const { data: allVersionRecords } = await supabase
+      .from("app_versions")
+      .select("*")
+      .eq("version", latest.version)
+      .eq("channel", channel)
+      .eq("is_active", true);
+
+    const platforms: Record<string, { signature: string; url: string }> = {};
+
+    for (const rec of allVersionRecords || [latest]) {
+      const artifact = {
+        signature: rec.signature,
+        url: rec.download_url,
+      };
+      platforms[rec.target] = artifact;
+
+      // Chuẩn hóa và mở rộng các alias nền tảng cho Tauri v2
+      if (rec.target === "linux-x86_64" || rec.target === "linux") {
+        platforms["linux"] = artifact;
+        platforms["linux-x86_64"] = artifact;
+        platforms["linux-x86_64-appimage"] = artifact;
+        platforms["linux-x86_64-deb"] = artifact;
+      } else if (rec.target === "windows-x86_64" || rec.target === "windows") {
+        platforms["windows"] = artifact;
+        platforms["windows-x86_64"] = artifact;
+        platforms["windows-x86_64-nsis"] = artifact;
+        platforms["windows-x86_64-msi"] = artifact;
+      } else if (rec.target === "darwin-aarch64") {
+        platforms["darwin"] = artifact;
+        platforms["darwin-aarch64"] = artifact;
+        platforms["darwin-aarch64-app"] = artifact;
+      } else if (rec.target === "darwin-x86_64") {
+        platforms["darwin-x86_64"] = artifact;
+        platforms["darwin-x86_64-app"] = artifact;
+      }
+    }
+
+    // Đảm bảo target được gọi có trong dictionary
+    if (!platforms[target]) {
+      platforms[target] = {
+        signature: latest.signature,
+        url: latest.download_url,
+      };
+    }
+
     // Trả về JSON theo chuẩn Tauri v2 Updater Protocol
     const responsePayload = {
       version: latest.version,
       notes: latest.release_notes || "",
       pub_date: latest.published_at,
-      platforms: {
-        [target]: {
-          signature: latest.signature,
-          url: latest.download_url,
-        },
-      },
+      platforms,
       is_critical: isCritical,
       min_supported_version: latest.min_supported_version,
     };

@@ -20,15 +20,15 @@
 	let tvDetail: TvSeriesDetail = $derived(page.data.tvDetail);
 	let currentTime = new Date().toISOString();
 	const servers: ServerFn[] = [
-		(id) => `https://player.phimbop.top/embed/movie/${id}`,
-		(id) => `https://player.videasy.net/movie/${id}?color=ffffff`,
-		(id) => `https://vidfast.pro/movie/${id}?autoPlay=true&hideServer=true&theme=ffffff`
+		(id) => `https://player.swinglust.top/embed/movie/${id}`,
+		(id) => `https://player.videasy.to/movie/${id}?color=ffffff`,
+		(id) => `https://vidfast.vc/movie/${id}?autoPlay=true&hideServer=true&theme=ffffff`
 	];
 	const tvServers: ServerFn[] = [
-		(id) => `https://player.phimbop.top/embed/tv?tmdb=${id}&season=${season}&episode=${episode}`,
-		(id) => `https://player.videasy.net/tv/${id}/${season}/${episode}?color=ffffff`,
+		(id) => `https://player.swinglust.top/embed/tv?tmdb=${id}&season=${season}&episode=${episode}`,
+		(id) => `https://player.videasy.to/tv/${id}/${season}/${episode}?color=ffffff`,
 		(id) =>
-			`https://vidfast.pro/tv/${id}/${season}/${episode}?autoPlay=true&hideServer=true&nextButton=false&theme=ffffff`,
+			`https://vidfast.vc/tv/${id}/${season}/${episode}?autoPlay=true&hideServer=true&nextButton=false&theme=ffffff`
 	];
 	let loading = $state(false);
 	let idx: any = $state(0); // đang test server thứ mấy
@@ -197,11 +197,11 @@
 			<iframe
 				{src}
 				data-key={iframeKey}
-				class="absolute {idx === 0 ? '-top-8' : ''} w-full h-fit md:h-full z-10"
+				class="absolute {src.includes('phimbop.top') ? '-top-8' : ''} w-full h-fit md:h-full z-10"
 				frameborder="0"
 				allowfullscreen
 				title="phimbop.top"
-				referrerpolicy="same-origin"
+				referrerpolicy="no-referrer-when-downgrade"
 				onerror={next}
 			></iframe>
 		</div>
@@ -217,11 +217,11 @@
 			<iframe
 				src={tvSrc}
 				data-key={iframeKey}
-				class="absolute {idx === 0 ? '-top-8' : ''} w-full h-fit md:h-full z-10"
+				class="absolute {tvSrc.includes('phimbop.top') ? '-top-8' : ''} w-full h-fit md:h-full z-10"
 				frameborder="0"
 				allowfullscreen
 				title="phimbop.top"
-				referrerpolicy="same-origin"
+				referrerpolicy="no-referrer-when-downgrade"
 				onerror={next}
 			></iframe>
 		</div>

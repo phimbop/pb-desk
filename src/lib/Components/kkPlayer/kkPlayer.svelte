@@ -20,6 +20,11 @@
 	import CommonHelper from '$lib/helper/commentHelper';
 	import { page } from '$app/state';
 	import { api } from '$lib/ipc';
+
+	if (typeof window !== 'undefined') {
+		(window as any).Hls = Hls;
+	}
+
 	let player = $state<MediaPlayerElement | undefined>(undefined);
 	let svkk = ['phim1280.tv', 'kkphimplayer6.com', 'kkphimplayer7.com'];
 	let s = ['https://s', 'https://v'];
@@ -205,13 +210,19 @@
 			if (videoSrc.includes('vip.')) {
 				return getProxyStreamUrl(videoSrc);
 			}
+			let hasMatched = false;
 			let temp = videoSrc;
-			svkk.forEach((url) => {
-				temp = temp.replace(url, pb);
-			});
-			s.forEach((url) => {
-				temp = temp.replace(url, pbsv);
-			});
+			for (const url of svkk) {
+				if (temp.includes(url)) {
+					temp = temp.replace(url, pb);
+					hasMatched = true;
+				}
+			}
+			if (hasMatched) {
+				for (const url of s) {
+					temp = temp.replace(url, pbsv);
+				}
+			}
 			return temp;
 		}
 		return '';
@@ -237,6 +248,22 @@
 				window.sessionStorage.setItem('watching_session_id', storedSession);
 			}
 			watchingSessionId = storedSession;
+
+			(window as any).Hls = Hls;
+			if (typeof document !== 'undefined') {
+				const hlsCdnUrls = [
+					'https://cdn.jsdelivr.net/npm/hls.js@^1.5.0/dist/hls.min.js',
+					'https://cdn.jsdelivr.net/npm/hls.js@^1.5.0/dist/hls.js'
+				];
+				for (const url of hlsCdnUrls) {
+					if (!document.querySelector(`script[src="${url}"]`)) {
+						const dummyScript = document.createElement('script');
+						dummyScript.type = 'text/plain';
+						dummyScript.src = url;
+						document.head.appendChild(dummyScript);
+					}
+				}
+			}
 		}
 		// Add event listeners before importing the bundle to avoid missing initial events during element upgrade
 		player!.addEventListener('can-play', onCanPlay as any);

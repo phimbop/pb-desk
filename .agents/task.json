@@ -1,84 +1,52 @@
 {
-  "sessionId": "737731a7-29b9-43c5-b66b-d44a43908b0a",
-  "title": "Fix KKPlayer video streaming in production build and fix TMDB movie loading and slow loading in phim-moi and should watch",
+  "sessionId": "9e900dda-95f6-4a66-858d-7790958e9629",
+  "title": "Release v0.1.5 via GitHub Actions and sync release to Supabase app_versions",
   "requirements": [
     {
       "id": "R1",
-      "description": "CSP connect-src configuration: Allow HTTPS streaming CDNs (b-cdn.net and https:) so HLS.js in KKPlayer can fetch playlists and segments",
+      "description": "Bump all project versions (package.json, tauri.conf.json, all Cargo.toml crates, updater service, about page) to v0.1.5",
       "checks": [
-        "media-and-tmdb-tests",
-        "production-blockers-tests"
+        "player-issues-tests",
+        "updater-tests"
       ]
     },
     {
       "id": "R2",
-      "description": "CI release workflow credentials: Pass TMDB_READ_ACCESS_TOKEN, SUPABASE_URL, SUPABASE_ANON_KEY to tauri-action build step",
+      "description": "Configure player.swinglust.top as priority #1 in CardVideoPlay and allow in Tauri CSP frame-src and Cloudflare",
       "checks": [
-        "media-and-tmdb-tests",
-        "ci-workflow-tests"
+        "player-issues-tests"
       ]
     },
     {
       "id": "R3",
-      "description": "TMDB token fallback & infinite loop fix: Provide fallback token for TMDB API and guard against infinite re-fetching in TabPhimMoi and TabNenXem",
+      "description": "Verify that sync_supabase_versions script includes v0.1.5 and correctly updates Supabase app_versions table",
       "checks": [
-        "media-and-tmdb-tests"
-      ]
-    },
-    {
-      "id": "R4",
-      "description": "Rust workspace tests: Ensure pb_service and pb_storage crate tests pass",
-      "checks": [
-        "rust-tests-check"
+        "updater-tests"
       ]
     }
   ],
   "checks": [
     {
-      "id": "media-and-tmdb-tests",
+      "id": "player-issues-tests",
       "command": [
         "bun",
         "--no-env-file",
         "test",
-        "scripts/agent/production_media_and_tmdb.test.ts"
+        "scripts/agent/player_issues.test.ts"
       ],
       "timeoutMs": 120000,
       "testFormat": "bun"
     },
     {
-      "id": "production-blockers-tests",
+      "id": "updater-tests",
       "command": [
         "bun",
         "--no-env-file",
         "test",
-        "scripts/agent/production_blockers.test.ts"
+        "scripts/agent/updater.test.ts"
       ],
       "timeoutMs": 120000,
       "testFormat": "bun"
-    },
-    {
-      "id": "ci-workflow-tests",
-      "command": [
-        "bun",
-        "--no-env-file",
-        "test",
-        "scripts/agent/ci_workflow.test.ts"
-      ],
-      "timeoutMs": 120000,
-      "testFormat": "bun"
-    },
-    {
-      "id": "rust-tests-check",
-      "command": [
-        "cargo",
-        "test",
-        "-p",
-        "pb_service",
-        "-p",
-        "pb_storage"
-      ],
-      "timeoutMs": 120000,
-      "testFormat": "cargo"
     }
   ]
 }

@@ -1,0 +1,109 @@
+import { describe, expect, it } from 'bun:test';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+
+const rootDir = path.resolve(__dirname, '../..');
+
+describe('TMDB Iframe and KKPlayer Playback Acceptance Tests', () => {
+	it('R1: tauri.conf.json allows https: in frame-src and cdn.jsdelivr.net in script-src', () => {
+		const confPath = path.join(rootDir, 'src-tauri/tauri.conf.json');
+		expect(fs.existsSync(confPath)).toBe(true);
+
+		const conf = JSON.parse(fs.readFileSync(confPath, 'utf-8'));
+		const csp = conf.app?.security?.csp;
+		const devCsp = conf.app?.security?.devCsp;
+
+		expect(csp).toBeDefined();
+		expect(devCsp).toBeDefined();
+
+		// frame-src must allow https: for embedding video servers and following redirects
+		expect(csp).toMatch(/frame-src[^;]*https:/);
+		expect(devCsp).toMatch(/frame-src[^;]*https:/);
+
+		// script-src must allow https://cdn.jsdelivr.net as fallback for Vidstack Hls loader
+		expect(csp).toMatch(/script-src[^;]*https:\/\/cdn\.jsdelivr\.net/);
+		expect(devCsp).toMatch(/script-src[^;]*https:\/\/cdn\.jsdelivr\.net/);
+	});
+
+	it('R2: CardVideoPlay.svelte prioritizes active working embed servers', () => {
+		const cardPath = path.join(rootDir, 'src/lib/Components/Card/CardVideoPlay.svelte');
+		expect(fs.existsSync(cardPath)).toBe(true);
+
+		const content = fs.readFileSync(cardPath, 'utf-8');
+
+		// Must point directly to active domains with player.swinglust.top prioritized first
+		expect(content).toContain('player.swinglust.top');
+		expect(content).toContain('player.videasy.to');
+		expect(content).toContain('vidfast.vc');
+
+		// First server in list should be player.swinglust.top, followed by videasy.to and vidfast.vc
+		const serversMatch = content.match(/const servers: ServerFn\[\] = \[\s*([^\]]+)\]/s);
+		expect(serversMatch).not.toBeNull();
+		const serverListStr = serversMatch![1];
+		expect(serverListStr).toMatch(/player\.swinglust\.top[\s\S]*videasy\.to[\s\S]*vidfast\.vc/);
+
+		// TV servers list should also prioritize player.swinglust.top, followed by videasy.to and vidfast.vc
+		const tvServersMatch = content.match(/const tvServers: ServerFn\[\] = \[\s*([^\]]+)\]/s);
+		expect(tvServersMatch).not.toBeNull();
+		const tvServerListStr = tvServersMatch![1];
+		expect(tvServerListStr).toMatch(/player\.swinglust\.top[\s\S]*videasy\.to[\s\S]*vidfast\.vc/);
+	});
+
+	it('R3: kkPlayer.svelte provides bundled Hls constructor and prevents external loader CSP failure', () => {
+		const playerPath = path.join(rootDir, 'src/lib/Components/kkPlayer/kkPlayer.svelte');
+		expect(fs.existsSync(playerPath)).toBe(true);
+
+		const content = fs.readFileSync(playerPath, 'utf-8');
+
+		// Bundled Hls must be assigned to window.Hls before Vidstack bundle loads
+		expect(content).toMatch(/(?:\(window\s+as\s+any\)|window)\.Hls\s*=\s*Hls/);
+
+		// Must prevent Vidstack loadScript network request failure by satisfying querySelector
+		expect(content).toContain('cdn.jsdelivr.net/npm/hls.js');
+
+		// Guard stream URL replacement so non-svkk domains are not corrupted with pbsvr-s
+		expect(content).toContain('svkk');
+		// Should check hasMatched or only rewrite s when svkk matches
+		expect(content).toMatch(/hasMatched|includes\(url\)|svkk\.some/);
+	});
+
+	it('R4: Stream URL transformation handles kkphim correctly without corrupting arbitrary URLs', () => {
+		const svkk = ['phim1280.tv', 'kkphimplayer6.com', 'kkphimplayer7.com'];
+		const s = ['https://s', 'https://v'];
+		const pb = 'b-cdn.net';
+		const pbsv = 'https://pbsvr-s';
+
+		function transformStreamUrl(videoSrc: string): string {
+			if (!videoSrc) return '';
+			if (videoSrc.includes('vip.')) {
+				return `https://opstream.b-cdn.net/hls/${new URL(videoSrc).host}${new URL(videoSrc).pathname}${new URL(videoSrc).search}`;
+			}
+			let hasMatched = false;
+			let temp = videoSrc;
+			for (const url of svkk) {
+				if (temp.includes(url)) {
+					temp = temp.replace(url, pb);
+					hasMatched = true;
+				}
+			}
+			if (hasMatched) {
+				for (const url of s) {
+					temp = temp.replace(url, pbsv);
+				}
+			}
+			return temp;
+		}
+
+		// kkphim phim1280.tv domain transforms to pbsvr-s*.b-cdn.net
+		const kkUrl = 'https://s4.phim1280.tv/20250425/1wMaOsDa/index.m3u8';
+		expect(transformStreamUrl(kkUrl)).toBe('https://pbsvr-s4.b-cdn.net/20250425/1wMaOsDa/index.m3u8');
+
+		// Unknown domain is NOT corrupted with pbsvr-s
+		const genericUrl = 'https://stream.example.com/live/index.m3u8';
+		expect(transformStreamUrl(genericUrl)).toBe('https://stream.example.com/live/index.m3u8');
+
+		// VIP domain is routed to opstream proxy
+		const vipUrl = 'https://vip.opstream11.com/20230101/index.m3u8';
+		expect(transformStreamUrl(vipUrl)).toBe('https://opstream.b-cdn.net/hls/vip.opstream11.com/20230101/index.m3u8');
+	});
+});

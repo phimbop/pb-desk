@@ -61,32 +61,29 @@ export async function syncReleaseToSupabase(tag: string) {
 	// Target mapping:
 	// Tauri v2 manifests include keys like:
 	// darwin-aarch64, darwin-x86_64, linux-x86_64, windows-x86_64-nsis / windows-x86_64
-	const targetMappings: Array<{
+	// Target mappings:
+	// 1. All specific platform keys in latest.json
+	// 2. Generic OS aliases ('linux', 'windows', 'darwin') for clients querying with {{target}}
+	const records: Array<{
+		version: string;
+		channel: string;
 		target: string;
-		keys: string[];
-	}> = [
-		{ target: 'windows-x86_64', keys: ['windows-x86_64-nsis', 'windows-x86_64', 'windows-x86_64-msi'] },
-		{ target: 'darwin-aarch64', keys: ['darwin-aarch64', 'darwin-aarch64-app'] },
-		{ target: 'darwin-x86_64', keys: ['darwin-x86_64', 'darwin-x86_64-app'] },
-		{ target: 'linux-x86_64', keys: ['linux-x86_64', 'linux-x86_64-appimage'] },
-	];
+		download_url: string;
+		signature: string;
+		release_notes: string;
+		rollout_percentage: number;
+		is_active: boolean;
+		is_critical: boolean;
+		published_at: string;
+	}> = [];
 
-	const records = [];
-
-	for (const mapping of targetMappings) {
-		let artifact: PlatformArtifact | undefined;
-		for (const key of mapping.keys) {
-			if (manifest.platforms[key]) {
-				artifact = manifest.platforms[key];
-				break;
-			}
-		}
-
-		if (artifact) {
+	// Sync all platform keys defined in latest.json
+	for (const [platformKey, artifact] of Object.entries(manifest.platforms)) {
+		if (artifact && artifact.url && artifact.signature) {
 			records.push({
 				version,
 				channel,
-				target: mapping.target,
+				target: platformKey,
 				download_url: artifact.url.trim(),
 				signature: artifact.signature.trim(),
 				release_notes: releaseNotes,
@@ -95,8 +92,34 @@ export async function syncReleaseToSupabase(tag: string) {
 				is_critical: false,
 				published_at: publishedAt,
 			});
-		} else {
-			console.warn(`No artifact found for target ${mapping.target} in ${tag}`);
+		}
+	}
+
+	// Add generic OS aliases so {{target}} alone matches without failing
+	const osAliases: Array<{ alias: string; candidateKeys: string[] }> = [
+		{ alias: 'linux', candidateKeys: ['linux-x86_64-appimage', 'linux-x86_64'] },
+		{ alias: 'windows', candidateKeys: ['windows-x86_64-nsis', 'windows-x86_64'] },
+		{ alias: 'darwin', candidateKeys: ['darwin-aarch64', 'darwin-x86_64'] },
+	];
+
+	for (const { alias, candidateKeys } of osAliases) {
+		for (const key of candidateKeys) {
+			if (manifest.platforms[key]) {
+				const artifact = manifest.platforms[key];
+				records.push({
+					version,
+					channel,
+					target: alias,
+					download_url: artifact.url.trim(),
+					signature: artifact.signature.trim(),
+					release_notes: releaseNotes,
+					rollout_percentage: 100,
+					is_active: true,
+					is_critical: false,
+					published_at: publishedAt,
+				});
+				break;
+			}
 		}
 	}
 
@@ -125,7 +148,7 @@ export async function syncReleaseToSupabase(tag: string) {
 
 async function main() {
 	const tags = process.argv.slice(2);
-	const tagsToSync = tags.length > 0 ? tags : ['v0.1.1', 'v0.1.2', 'v0.1.3', 'v0.1.4'];
+	const tagsToSync = tags.length > 0 ? tags : ['v0.1.1', 'v0.1.2', 'v0.1.3', 'v0.1.4', 'v0.1.5'];
 
 	console.log(`Syncing releases to Supabase: ${tagsToSync.join(', ')}`);
 	for (const tag of tagsToSync) {

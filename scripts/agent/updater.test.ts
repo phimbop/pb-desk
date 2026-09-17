@@ -223,4 +223,22 @@ describe('Supabase & Tauri v2 Updater Integration Tests', () => {
 		expect(aboutCode).toContain('Kiểm tra cập nhật');
 		expect(aboutCode).toMatch(/v0\.1\.\d+/);
 	});
+
+	it('R1/R2: Edge Function resolves candidate targets and expands all platform aliases', () => {
+		const funcPath = path.join(rootDir, 'supabase/functions/app-update/index.ts');
+		const code = fs.readFileSync(funcPath, 'utf-8');
+
+		expect(code).toContain('candidateTargets');
+		expect(code).toContain('linux-x86_64-appimage');
+		expect(code).toContain('windows-x86_64-nsis');
+		expect(code).toContain('darwin-aarch64-app');
+		expect(code).toContain('allVersionRecords');
+		expect(code).toContain('.in("target", Array.from(candidateTargets))');
+	});
+
+	it('R3: tauri.conf.json updater endpoint includes arch parameter', () => {
+		const confPath = path.join(rootDir, 'src-tauri/tauri.conf.json');
+		const conf = JSON.parse(fs.readFileSync(confPath, 'utf-8'));
+		expect(conf.plugins.updater.endpoints[0]).toContain('arch={{arch}}');
+	});
 });
