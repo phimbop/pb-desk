@@ -1,17 +1,17 @@
 {
   "sessionId": "015d3e6a-e319-4357-8932-a6c91d9ded13",
-  "title": "Fix Linux installer Text file busy error when updating running AppImage and ensure safe replacement",
+  "title": "Fix in-app update check failure by supplying Supabase authentication headers and resilient error handling",
   "requirements": [
     {
       "id": "R1",
-      "description": "Installer script hot-replacement: Ensure install.sh unlinks old destination and gracefully stops or replaces running instances without 'Text file busy' error",
+      "description": "Updater authentication headers: updater service and Tauri Rust builder attach apikey and Authorization headers to check requests",
       "checks": [
-        "installer-tests"
+        "updater-tests"
       ]
     },
     {
       "id": "R2",
-      "description": "Installer tests: Verify install.sh passes all tests in installer_script.test.ts",
+      "description": "Installer script compatibility: Verify install.sh script and tests pass",
       "checks": [
         "installer-tests"
       ]

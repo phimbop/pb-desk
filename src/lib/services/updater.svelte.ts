@@ -1,5 +1,6 @@
 import { isTauri, api } from '$lib/ipc';
 import { getSupabase } from '$lib/services/supabase';
+import { SUPABASE_ANON_KEY } from '$lib';
 
 export interface UpdateInfo {
 	version: string;
@@ -104,7 +105,12 @@ class UpdaterService {
 			// Môi trường Desktop (Tauri v2)
 			const { check } = await import('@tauri-apps/plugin-updater');
 			const installationId = await getOrCreateInstallationId();
-			const update = await check({ headers: { 'x-installation-id': installationId } });
+			const headers: Record<string, string> = {
+				'x-installation-id': installationId,
+				apikey: SUPABASE_ANON_KEY,
+				Authorization: `Bearer ${SUPABASE_ANON_KEY}`
+			};
+			const update = await check({ headers });
 
 			if (update && update.available) {
 				this.activeUpdate = update;
@@ -160,7 +166,8 @@ class UpdaterService {
 		} catch (err: any) {
 			console.error('[Updater] Check for updates error:', err);
 			this.status = 'error';
-			this.error = err?.message || 'Không thể kiểm tra bản cập nhật';
+			const errorMsg = typeof err === 'string' ? err : err?.message || String(err || '');
+			this.error = errorMsg || 'Không thể kiểm tra bản cập nhật';
 			if (manual) {
 				this.modalOpen = true;
 			}

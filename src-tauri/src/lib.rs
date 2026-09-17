@@ -404,7 +404,16 @@ pub fn run() {
         ))
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_process::init())
-        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin({
+            const DEFAULT_SUPABASE_KEY: &str = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeGdkc2FueWtwbm1naHRvaGZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTY1NjYzNTYsImV4cCI6MjAxMjE0MjM1Nn0._M573rGbATQfCvNRLqQHk7dCXSArLo6J_KI2M9HUBd0";
+            let builder = tauri_plugin_updater::Builder::new()
+                .header("apikey", DEFAULT_SUPABASE_KEY)
+                .and_then(|b| b.header("Authorization", format!("Bearer {DEFAULT_SUPABASE_KEY}")));
+            match builder {
+                Ok(b) => b.build(),
+                Err(_) => tauri_plugin_updater::Builder::new().build(),
+            }
+        })
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 if let Some(state) = window.try_state::<AppState>() {

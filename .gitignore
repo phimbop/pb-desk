@@ -37,3 +37,7 @@ Thumbs.db
 # CodeGraph (local index is ignored via .codegraph/.gitignore)
 .codegraph/*
 !.codegraph/.gitignore
+
+# Supabase
+supabase/.temp/
+

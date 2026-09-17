@@ -138,7 +138,9 @@ describe('Supabase & Tauri v2 Updater Integration Tests', () => {
 		const libRsPath = path.join(rootDir, 'src-tauri/src/lib.rs');
 		const libRs = fs.readFileSync(libRsPath, 'utf-8');
 
-		expect(libRs).toContain('tauri_plugin_updater::Builder::new().build()');
+		expect(libRs).toContain('tauri_plugin_updater::Builder::new()');
+		expect(libRs).toContain('header("apikey"');
+		expect(libRs).toContain('header("Authorization"');
 		expect(libRs).toContain('tauri_plugin_process::init()');
 	});
 
@@ -160,7 +162,7 @@ describe('Supabase & Tauri v2 Updater Integration Tests', () => {
 		expect(conf.bundle?.createUpdaterArtifacts).toBe(true);
 	});
 
-	it('R3: Frontend UpdaterService exists with reactive runes and persistent installation_id', () => {
+	it('R3: Frontend UpdaterService exists with reactive runes, persistent installation_id, and Supabase auth headers', () => {
 		const servicePath = path.join(rootDir, 'src/lib/services/updater.svelte.ts');
 		expect(fs.existsSync(servicePath)).toBe(true);
 
@@ -169,6 +171,8 @@ describe('Supabase & Tauri v2 Updater Integration Tests', () => {
 		expect(code).toContain('export const updater = new UpdaterService();');
 		expect(code).toContain('getOrCreateInstallationId');
 		expect(code).toContain('x-installation-id');
+		expect(code).toContain('apikey');
+		expect(code).toContain('Authorization');
 		expect(code).toContain('checkForUpdates');
 		expect(code).toContain('downloadAndInstall');
 		expect(code).toContain('relaunch');
