@@ -186,14 +186,26 @@ uninstall_app() {
         # Remove local AppImage and shortcuts
         APP_BIN="$HOME/.local/bin/${BINARY_NAME}"
         DESKTOP_FILE="$HOME/.local/share/applications/phimbop.desktop"
-        ICON_FILE="$HOME/.local/share/icons/hicolor/128x128/apps/phimbop.png"
 
         [ -f "$APP_BIN" ] && { log_info "Xóa $APP_BIN"; [ "$DRY_RUN" = true ] || rm -f "$APP_BIN"; }
         [ -f "$DESKTOP_FILE" ] && { log_info "Xóa $DESKTOP_FILE"; [ "$DRY_RUN" = true ] || rm -f "$DESKTOP_FILE"; }
-        [ -f "$ICON_FILE" ] && { log_info "Xóa $ICON_FILE"; [ "$DRY_RUN" = true ] || rm -f "$ICON_FILE"; }
+
+        for size in 16x16 24x24 32x32 48x48 64x64 128x128 256x256 512x512; do
+            icon="$HOME/.local/share/icons/hicolor/${size}/apps/${BINARY_NAME}.png"
+            [ -f "$icon" ] && { [ "$DRY_RUN" = true ] || rm -f "$icon"; }
+        done
+        [ "$DRY_RUN" = true ] || rm -f "$HOME/.local/share/pixmaps/${BINARY_NAME}.png" "$HOME/.icons/${BINARY_NAME}.png" 2>/dev/null || true
+
+        if command -v gtk-update-icon-cache >/dev/null 2>&1 && [ "$DRY_RUN" = false ]; then
+            gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor" >/dev/null 2>&1 || true
+        fi
 
         if command -v update-desktop-database >/dev/null 2>&1 && [ "$DRY_RUN" = false ]; then
             update-desktop-database "$HOME/.local/share/applications" >/dev/null 2>&1 || true
+        fi
+
+        if pgrep -x xfce4-panel >/dev/null 2>&1 && [ "$DRY_RUN" = false ]; then
+            xfce4-panel -r >/dev/null 2>&1 || true
         fi
 
         log_success "Đã gỡ cài đặt ${APP_NAME} trên Linux thành công!"
@@ -464,7 +476,22 @@ install_linux() {
         curl -sSL "$DEFAULT_ICON_URL" -o "$TARGET_ICON" 2>/dev/null || true
     fi
 
-    # Create Desktop Entry
+    # Populate multiple sizes and fallback directories (pixmaps, ~/.icons)
+    mkdir -p "$HOME/.local/share/pixmaps" "$HOME/.icons"
+    cp "$TARGET_ICON" "$HOME/.local/share/pixmaps/${BINARY_NAME}.png" 2>/dev/null || true
+    cp "$TARGET_ICON" "$HOME/.icons/${BINARY_NAME}.png" 2>/dev/null || true
+
+    for size in 16x16 24x24 32x32 48x48 64x64 256x256 512x512; do
+        SIZE_DIR="$HOME/.local/share/icons/hicolor/${size}/apps"
+        mkdir -p "$SIZE_DIR"
+        if [ -f "src-tauri/icons/${size}.png" ]; then
+            cp "src-tauri/icons/${size}.png" "${SIZE_DIR}/${BINARY_NAME}.png" 2>/dev/null || true
+        else
+            cp "$TARGET_ICON" "${SIZE_DIR}/${BINARY_NAME}.png" 2>/dev/null || true
+        fi
+    done
+
+    # Create Desktop Entry (using absolute icon path for 100% compatibility across all Linux desktops)
     DESKTOP_ENTRY="${APP_DIR}/phimbop.desktop"
     cat << EOF > "$DESKTOP_ENTRY"
 [Desktop Entry]
@@ -472,16 +499,31 @@ Name=${APP_NAME}
 GenericName=Movie Streaming Player
 Comment=Ứng dụng xem phim desktop đa nền tảng
 Exec=${TARGET_BIN} %U
-Icon=${BINARY_NAME}
+Icon=${TARGET_ICON}
 Terminal=false
 Type=Application
 Categories=AudioVideo;Video;Player;
+Keywords=phim;video;movie;streaming;phimbop;
 StartupWMClass=PHIMBOP
 EOF
     chmod +x "$DESKTOP_ENTRY"
 
+    # Refresh desktop & icon databases
+    if command -v xdg-icon-resource >/dev/null 2>&1; then
+        xdg-icon-resource install --novendor --size 128 "$TARGET_ICON" "${BINARY_NAME}" >/dev/null 2>&1 || true
+    fi
+
+    if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+        gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor" >/dev/null 2>&1 || true
+    fi
+
     if command -v update-desktop-database >/dev/null 2>&1; then
         update-desktop-database "$APP_DIR" >/dev/null 2>&1 || true
+    fi
+
+    # Refresh XFCE Panel / Whisker Menu if active
+    if pgrep -x xfce4-panel >/dev/null 2>&1; then
+        xfce4-panel -r >/dev/null 2>&1 || true
     fi
 
     # Check FUSE requirement for AppImage on Linux
