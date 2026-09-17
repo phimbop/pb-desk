@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "PHIMBOP",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "identifier": "com.phimbop.desktop",
   "build": {
     "beforeDevCommand": "bun run dev",
@@ -36,6 +36,11 @@
     "category": "Entertainment",
     "shortDescription": "PHIMBOP Desktop - Phim gì cũng có",
     "longDescription": "PHIMBOP Desktop - Ứng dụng xem phim đa nền tảng cho Windows, macOS và Linux.",
+    "linux": {
+      "appimage": {
+        "bundleMediaFramework": true
+      }
+    },
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

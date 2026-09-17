@@ -1,25 +1,25 @@
 {
-  "sessionId": "9e900dda-95f6-4a66-858d-7790958e9629",
-  "title": "Release v0.1.5 via GitHub Actions and sync release to Supabase app_versions",
+  "sessionId": "38ea6595-ca31-43e3-a99a-8d513239107c",
+  "title": "Release v0.1.6 with GStreamer media framework bundled in Linux AppImage",
   "requirements": [
     {
       "id": "R1",
-      "description": "Bump all project versions (package.json, tauri.conf.json, all Cargo.toml crates, updater service, about page) to v0.1.5",
+      "description": "Enable bundleMediaFramework in tauri.conf.json for Linux AppImage and add full GStreamer codec plugins to release.yml workflow",
       "checks": [
-        "player-issues-tests",
-        "updater-tests"
+        "media-framework-tests"
       ]
     },
     {
       "id": "R2",
-      "description": "Configure player.swinglust.top as priority #1 in CardVideoPlay and allow in Tauri CSP frame-src and Cloudflare",
+      "description": "Bump all project versions (package.json, tauri.conf.json, Cargo crates, updater service, about page) to v0.1.6",
       "checks": [
-        "player-issues-tests"
+        "media-framework-tests",
+        "updater-tests"
       ]
     },
     {
       "id": "R3",
-      "description": "Verify that sync_supabase_versions script includes v0.1.5 and correctly updates Supabase app_versions table",
+      "description": "Verify that sync_supabase_versions script includes v0.1.6 and handles multi-platform release synchronization",
       "checks": [
         "updater-tests"
       ]
@@ -27,12 +27,12 @@
   ],
   "checks": [
     {
-      "id": "player-issues-tests",
+      "id": "media-framework-tests",
       "command": [
         "bun",
         "--no-env-file",
         "test",
-        "scripts/agent/player_issues.test.ts"
+        "scripts/agent/appimage_media_framework.test.ts"
       ],
       "timeoutMs": 120000,
       "testFormat": "bun"

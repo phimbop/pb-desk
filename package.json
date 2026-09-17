@@ -1,7 +1,7 @@
 {
 	"name": "pb-desk",
 	"private": true,
-	"version": "0.1.5",
+	"version": "0.1.6",
 	"type": "module",
 	"scripts": {
 		"agent:run": "bun --no-env-file run scripts/agent/run.ts",
