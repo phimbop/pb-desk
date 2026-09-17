@@ -386,6 +386,14 @@ pub async fn trigger_manual_check(
     Ok(updates.into_iter().map(Into::into).collect())
 }
 
+#[tauri::command]
+fn get_installation_id(state: State<'_, AppState>) -> Result<String, String> {
+    state
+        .storage
+        .get_or_create_installation_id()
+        .map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -412,15 +420,16 @@ pub fn run() {
             let app_data_dir = app
                 .path()
                 .app_data_dir()
-                .unwrap_or_else(|_| std::path::PathBuf::from("."));
+                .map_err(|e| format!("Failed to resolve app data directory: {e}"))?;
 
-            let _ = fs::create_dir_all(&app_data_dir);
+            fs::create_dir_all(&app_data_dir)
+                .map_err(|e| format!("Failed to create app data directory at {:?}: {e}", app_data_dir))?;
+
             let db_path = app_data_dir.join("pb_desk.db");
 
             let storage = Arc::new(
                 SqliteStorage::new(&db_path)
-                    .or_else(|_| SqliteStorage::new_in_memory())
-                    .expect("Failed to initialize storage"),
+                    .map_err(|e| format!("Failed to open persistent SQLite database at {:?}: {e}", db_path))?,
             );
 
             let api_client = MovieApiClient::new();
@@ -525,6 +534,7 @@ pub fn run() {
             get_app_settings,
             save_app_settings,
             check_for_movie_updates,
+            get_installation_id,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

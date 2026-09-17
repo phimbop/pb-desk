@@ -1,4 +1,4 @@
-import { isTauri } from '$lib/ipc';
+import { isTauri, api } from '$lib/ipc';
 import { getSupabase } from '$lib/services/supabase';
 
 export interface UpdateInfo {
@@ -18,6 +18,41 @@ export type UpdateStatus =
 	| 'downloaded'
 	| 'up-to-date'
 	| 'error';
+
+const INSTALLATION_KEY = 'pb_desk_installation_id';
+const UUID_REGEX =
+	/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/**
+ * Lấy hoặc khởi tạo ID cài đặt cố định cho từng thiết bị (UUIDv4)
+ * Ưu tiên lưu và truy xuất bền vững từ SQLite pb_storage qua Tauri IPC.
+ */
+export async function getOrCreateInstallationId(): Promise<string> {
+	if (isTauri()) {
+		try {
+			const id = await api.getInstallationId();
+			if (id && UUID_REGEX.test(id)) {
+				return id;
+			}
+			throw new Error(`Invalid installation_id format from native storage: ${id}`);
+		} catch (e) {
+			console.error('[Updater] Failed to get persistent installation_id from SQLite storage:', e);
+			throw new Error(`Cannot retrieve persistent installation_id from native SQLite storage: ${e}`);
+		}
+	}
+
+	// Môi trường Web browser / Dev mode (không phải Tauri desktop)
+	if (typeof window !== 'undefined' && window.localStorage) {
+		let id = localStorage.getItem(INSTALLATION_KEY);
+		if (!id || !UUID_REGEX.test(id)) {
+			id = crypto.randomUUID();
+			localStorage.setItem(INSTALLATION_KEY, id);
+		}
+		return id;
+	}
+
+	return '00000000-0000-0000-0000-000000000000';
+}
 
 class UpdaterService {
 	status = $state<UpdateStatus>('idle');
@@ -68,7 +103,8 @@ class UpdaterService {
 
 			// Môi trường Desktop (Tauri v2)
 			const { check } = await import('@tauri-apps/plugin-updater');
-			const update = await check();
+			const installationId = await getOrCreateInstallationId();
+			const update = await check({ headers: { 'x-installation-id': installationId } });
 
 			if (update && update.available) {
 				this.activeUpdate = update;

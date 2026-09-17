@@ -79,3 +79,22 @@ bun run check
 # 5. Đóng gói ứng dụng Desktop
 bun run tauri build
 ```
+
+---
+
+## 4. Cài đặt nhanh (Linux & macOS)
+
+Người dùng có thể cài đặt trực tiếp ứng dụng thông qua script tự động:
+
+```bash
+# Cài đặt tự động phiên bản mới nhất
+curl -fsSL https://raw.githubusercontent.com/phimbop/pb-desk/main/install.sh | bash
+
+# Hoặc nếu đã clone mã nguồn về máy:
+chmod +x install.sh
+./install.sh
+```
+
+- **Linux**: Tự động tải `AppImage` di động hoặc gói `.deb` (Debian/Ubuntu), tự động tạo shortcut launcher trong Menu ứng dụng và gán biểu tượng.
+- **macOS**: Tự động tải DMG tương ứng với kiến trúc máy (Apple Silicon M-series hoặc Intel x86_64), mount và cài đặt vào `/Applications`.
+

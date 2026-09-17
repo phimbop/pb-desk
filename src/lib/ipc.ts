@@ -625,7 +625,8 @@ export const api = {
 		safeInvoke<WatchStats>('get_user_watch_stats', { userId, user_id: userId }),
 	getAppSettings: () => safeInvoke<AppSettings>('get_app_settings'),
 	saveAppSettings: (settings: AppSettings) => safeInvoke<void>('save_app_settings', { settings }),
-	checkForMovieUpdates: () => safeInvoke<MovieUpdateEvent[]>('check_for_movie_updates')
+	checkForMovieUpdates: () => safeInvoke<MovieUpdateEvent[]>('check_for_movie_updates'),
+	getInstallationId: () => safeInvoke<string>('get_installation_id')
 };
 
 export async function enableAutostart(): Promise<boolean> {

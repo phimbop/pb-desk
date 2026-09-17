@@ -67,6 +67,30 @@ impl SqliteStorage {
         Ok(())
     }
 
+    pub fn get_or_create_installation_id(&self) -> PbResult<String> {
+        let conn = self.conn.lock().map_err(|_| PbError::Internal("Lock poisoned".into()))?;
+        let mut stmt = conn
+            .prepare("SELECT value FROM app_settings WHERE key = 'installation_id'")
+            .map_err(|e| PbError::Database(e.to_string()))?;
+
+        let mut rows = stmt
+            .query(params![])
+            .map_err(|e| PbError::Database(e.to_string()))?;
+
+        if let Some(row) = rows.next().map_err(|e| PbError::Database(e.to_string()))? {
+            let id: String = row.get(0).map_err(|e| PbError::Database(e.to_string()))?;
+            Ok(id)
+        } else {
+            let new_id = uuid::Uuid::new_v4().to_string();
+            conn.execute(
+                "INSERT INTO app_settings (key, value) VALUES ('installation_id', ?1)",
+                params![new_id],
+            )
+            .map_err(|e| PbError::Database(e.to_string()))?;
+            Ok(new_id)
+        }
+    }
+
     pub fn is_movie_notified(&self, slug: &str, episode: Option<&str>) -> PbResult<bool> {
         let conn = self.conn.lock().map_err(|_| PbError::Internal("Lock poisoned".into()))?;
         let mut stmt = conn

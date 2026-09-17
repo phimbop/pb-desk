@@ -4,6 +4,7 @@
 	import type { CommentWithUser } from '$lib/types/comments';
 	import { getUserRole } from '$lib/utils/rank';
 	import { appFetch } from '$lib/ipc';
+	import { untrack } from 'svelte';
 
 	const ALLOWED_EMOJI = ['👍', '❤️', '😂', '😢', '😡', '😮'] as const;
 	type ReactionEmoji = (typeof ALLOWED_EMOJI)[number];
@@ -36,13 +37,17 @@
 	let error = $state('');
 
 	// Vote state (local optimistic)
-	let score = $state(comment.score ?? 0);
-	let userVote = $state<1 | -1 | null>(comment.user_vote ?? null);
+	// untrack: các state dưới đây chỉ seed một lần từ prop `comment`, sau đó được
+	// cập nhật optimistic khi người dùng vote/react. Không được đổi sang $derived
+	// theo prop, vì cha thay object `comment` (thêm reply, ẩn comment) sẽ reset
+	// mất thao tác của người dùng.
+	let score = $state(untrack(() => comment.score ?? 0));
+	let userVote = $state<1 | -1 | null>(untrack(() => comment.user_vote ?? null));
 	let voting = $state(false);
 
 	// Reaction state (local optimistic)
-	let reactions = $state<Record<string, number>>({ ...(comment.reactions ?? {}) });
-	let userReaction = $state<string | null>(comment.user_reaction ?? null);
+	let reactions = $state<Record<string, number>>(untrack(() => ({ ...(comment.reactions ?? {}) })));
+	let userReaction = $state<string | null>(untrack(() => comment.user_reaction ?? null));
 	let showEmojiPicker = $state(false);
 	let reacting = $state(false);
 

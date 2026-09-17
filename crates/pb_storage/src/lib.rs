@@ -123,4 +123,77 @@ mod tests {
         assert_eq!(list.len(), 1);
         assert_eq!(list[0].movie_slug, "attack-on-titan");
     }
+
+    #[test]
+    fn test_installation_id_persistence() {
+        let storage = SqliteStorage::new_in_memory().unwrap();
+
+        // 1. Initial generation
+        let id1 = storage.get_or_create_installation_id().unwrap();
+        assert!(!id1.is_empty());
+        // Verify it is a valid UUIDv4
+        let parsed = uuid::Uuid::parse_str(&id1);
+        assert!(parsed.is_ok(), "installation_id must be a valid UUID");
+        assert_eq!(parsed.unwrap().get_version_num(), 4);
+
+        // 2. Subsequent call must return the exact same installation_id
+        let id2 = storage.get_or_create_installation_id().unwrap();
+        assert_eq!(id1, id2, "installation_id must be persistent across calls");
+    }
+
+    #[test]
+    fn test_sqlite_file_persistence_across_restarts() {
+        let temp_dir = std::env::temp_dir();
+        let db_path = temp_dir.join(format!("pb_test_persistence_{}.db", uuid::Uuid::new_v4()));
+
+        // Step 1: Initialize storage at file path, save settings, installation_id, and favorites
+        {
+            let storage = SqliteStorage::new(&db_path).expect("Failed to initialize storage at file path");
+            let mut settings = storage.get_settings().expect("Failed to get default settings");
+            settings.autostart = false;
+            settings.check_interval_mins = 45;
+            storage.save_settings(&settings).expect("Failed to save settings");
+
+            let inst_id = storage.get_or_create_installation_id().expect("Failed to get installation id");
+            assert!(!inst_id.is_empty());
+
+            let fav = FavoriteMovieItem {
+                id: None,
+                movie_slug: "persistent-movie".into(),
+                movie_name: "Persistent Movie".into(),
+                origin_name: "Original Persistent".into(),
+                poster_url: "https://example.com/poster.jpg".into(),
+                year: Some(2026),
+                quality: Some("FHD".into()),
+                episode_current: Some("Tập 1".into()),
+                created_at: Utc::now(),
+            };
+            storage.add_favorite(fav).expect("Failed to add favorite");
+        } // storage instance dropped here, closing connection
+
+        // Step 2: Reopen the SQLite file (simulating app restart) and verify data persistence
+        {
+            let storage_reopened = SqliteStorage::new(&db_path).expect("Failed to reopen storage from existing file");
+            let loaded_settings = storage_reopened.get_settings().expect("Failed to get settings after reopen");
+            assert_eq!(loaded_settings.autostart, false);
+            assert_eq!(loaded_settings.check_interval_mins, 45);
+
+            let loaded_inst_id = storage_reopened.get_or_create_installation_id().expect("Failed to get installation id after reopen");
+            assert!(!loaded_inst_id.is_empty());
+
+            let favs = storage_reopened.get_favorites(1, 10).expect("Failed to get favorites after reopen");
+            assert_eq!(favs.items.len(), 1);
+            assert_eq!(favs.items[0].movie_slug, "persistent-movie");
+        }
+
+        // Clean up temporary file
+        let _ = std::fs::remove_file(&db_path);
+    }
+
+    #[test]
+    fn test_sqlite_open_invalid_path_fails_explicitly() {
+        let invalid_path = std::path::PathBuf::from("/proc/non_existent_dir_pb_desk/impossible.db");
+        let result = SqliteStorage::new(&invalid_path);
+        assert!(result.is_err(), "Opening an invalid path must return an error and not silently succeed");
+    }
 }

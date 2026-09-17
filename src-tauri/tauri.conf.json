@@ -7,7 +7,8 @@
     "beforeDevCommand": "bun run dev",
     "devUrl": "http://localhost:1420",
     "beforeBuildCommand": "bun run build",
-    "frontendDist": "../build"
+    "frontendDist": "../build",
+    "removeUnusedCommands": true
   },
   "app": {
     "windows": [
@@ -23,12 +24,14 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self' ipc: http://ipc.localhost; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; media-src 'self' https: blob: data:; connect-src 'self' ipc: https: http: ws:; font-src 'self' data:;",
+      "csp": "default-src 'self' ipc: http://ipc.localhost; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; media-src 'self' https: blob: data:; connect-src 'self' ipc: http://ipc.localhost https://nhxgdsanykpnmghtohfz.supabase.co https://phimapi.com https://v3.phimbop.cfd https://api.themoviedb.org https://vidsrc.me; font-src 'self' data:; frame-src 'self' https://player.phimbop.top https://player.videasy.net https://vidfast.pro;",
+      "devCsp": "default-src 'self' ipc: http://ipc.localhost; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; media-src 'self' https: blob: data:; connect-src 'self' ipc: http://ipc.localhost https://nhxgdsanykpnmghtohfz.supabase.co https://phimapi.com https://v3.phimbop.cfd https://api.themoviedb.org https://vidsrc.me http://localhost:1420 ws://localhost:1420; font-src 'self' data:; frame-src 'self' https://player.phimbop.top https://player.videasy.net https://vidfast.pro;",
       "capabilities": ["default"]
     }
   },
   "bundle": {
     "active": true,
+    "createUpdaterArtifacts": true,
     "targets": "all",
     "category": "Entertainment",
     "shortDescription": "PHIMBOP Desktop - Phim gì cũng có",
@@ -44,7 +47,7 @@
   "plugins": {
     "opener": {},
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDVBMzc1OEZCRDE2NDI1MzQKUlVRZ0hBbnlQcE51LzcxR3k2UjkvL09uNmpWNGJmSUt2MDFGSmhKRHh4clZ2b2V1ZjlZcFB4czgK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDk2N0Y2NjdFRjU2NkFFOTUKUldTVnJtYjFmbVovbHFFZTBTUmhEbkczSjlMcy94cXo4Vk5WV0EyODF5U3VxVWRJYjZIdGhPNkwK",
       "endpoints": [
         "https://nhxgdsanykpnmghtohfz.supabase.co/functions/v1/app-update?target={{target}}&current_version={{current_version}}"
       ]

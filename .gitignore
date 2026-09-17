@@ -18,6 +18,9 @@ src-tauri/target/
 # Test / QA / Agent logs & evidence
 *.log
 .agent-evidence/
+
+# Radio agent registration (contains a channel token)
+.radio-*.json
 playwright-report/
 test-results/
 

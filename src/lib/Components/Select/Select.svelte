@@ -17,7 +17,7 @@
 
   let open = $state(false);
   let trigger: HTMLButtonElement;
-  let popover: HTMLDivElement;
+  let popover = $state<HTMLDivElement | undefined>();
 
   let placement: "bottom" | "top" = $state("bottom");
   const close = () => (open = false);

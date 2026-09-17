@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
+    import { onMount, untrack } from 'svelte';
     import LoadingImage from './LoadingImage.svelte';
     import ErrorImage from './ErrorImage.svelte';
 
@@ -24,10 +24,12 @@
         ...props
     }: ImageProps = $props();
 
-    let isVisible = $state(isCritical);
-    let loaded = $state(isCritical);
+    // untrack: `isCritical` chỉ dùng để seed giá trị khởi tạo một lần, không phải
+    // dependency reactive của các state cục bộ bên dưới.
+    let isVisible = $state(untrack(() => isCritical));
+    let loaded = $state(untrack(() => isCritical));
     let failed = $state(false);
-    let showSkeleton = $state(!isCritical);
+    let showSkeleton = $state(untrack(() => !isCritical));
     let containerRef: HTMLDivElement | undefined = $state();
 
     $effect(() => {

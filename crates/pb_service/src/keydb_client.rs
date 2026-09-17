@@ -7,14 +7,13 @@ use std::time::Duration;
 
 const DEFAULT_KEYDB_HOST: &str = "keydb2.swinglust.top";
 const DEFAULT_KEYDB_PORT: u16 = 6379;
-const DEFAULT_KEYDB_PASS: &str = "Login@123";
 const CACHE_KEY: &str = "cache:top_watching_list";
 const CACHE_TTL_SECS: u64 = 10;
 const FALLBACK_API_URL: &str = "https://v3.phimbop.cfd/api/watching/list";
 
 #[derive(Clone)]
 pub struct KeydbClient {
-    client: redis::Client,
+    client: Option<redis::Client>,
     http_client: reqwest::Client,
 }
 
@@ -32,7 +31,7 @@ impl KeydbClient {
             .and_then(|p| p.parse().ok())
             .unwrap_or(DEFAULT_KEYDB_PORT);
         let pass = crate::surreal_client::load_env_var_or_file("KEYDB_PASSWORD")
-            .unwrap_or_else(|| DEFAULT_KEYDB_PASS.to_string());
+            .unwrap_or_default();
 
         let redis_url = if pass.is_empty() {
             format!("redis://{}:{}", host, port)
@@ -40,8 +39,13 @@ impl KeydbClient {
             format!("redis://default:{}@{}:{}", pass, host, port)
         };
 
-        let client = redis::Client::open(redis_url.as_str())
-            .expect("Failed to create KeyDB/Redis client");
+        let client = match redis::Client::open(redis_url.as_str()) {
+            Ok(c) => Some(c),
+            Err(e) => {
+                eprintln!("[KeydbClient] Failed to initialize KeyDB client (graceful degrade): {}", e);
+                None
+            }
+        };
 
         let http_client = reqwest::Client::builder()
             .timeout(Duration::from_secs(5))
@@ -55,7 +59,10 @@ impl KeydbClient {
     }
 
     async fn get_conn(&self) -> PbResult<redis::aio::MultiplexedConnection> {
-        self.client
+        let client = self.client.as_ref().ok_or_else(|| {
+            PbError::Network("KeyDB client is unconfigured or disabled".to_string())
+        })?;
+        client
             .get_multiplexed_async_connection()
             .await
             .map_err(|e| PbError::Network(format!("KeyDB connection error: {}", e)))
@@ -74,24 +81,16 @@ impl KeydbClient {
         let session_key = format!("active_session:movie:{}:{}", movie_id, session_id);
         let movie_set_key = format!("movie:active:{}", movie_id);
 
-        let mut conn = self.get_conn().await?;
+        if let Ok(mut conn) = self.get_conn().await {
+            let mut pipe = redis::pipe();
+            pipe.set_ex(&session_key, "1", 30)
+                .zadd(&movie_set_key, session_id, now)
+                .expire(&movie_set_key, 120)
+                .zadd("active_movies", movie_id, now)
+                .expire("active_movies", 86400);
 
-        // 1. Mark session active with 30s TTL
-        // 2. Add session to movie viewers with current timestamp
-        // 3. Expire movie set after 120s
-        // 4. Add movie to active_movies list with current timestamp
-        // 5. Expire active_movies list after 1 day
-        let mut pipe = redis::pipe();
-        pipe.set_ex(&session_key, "1", 30)
-            .zadd(&movie_set_key, session_id, now)
-            .expire(&movie_set_key, 120)
-            .zadd("active_movies", movie_id, now)
-            .expire("active_movies", 86400);
-
-        let () = pipe
-            .query_async(&mut conn)
-            .await
-            .map_err(|e| PbError::Network(format!("KeyDB record_heartbeat error: {}", e)))?;
+            let _ = pipe.query_async::<()>(&mut conn).await;
+        }
 
         // Also fire-and-forget sync to central API if desired
         let fallback_url = "https://v3.phimbop.cfd/api/watching/heartbeat";

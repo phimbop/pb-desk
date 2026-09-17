@@ -10,7 +10,7 @@ on:
         description: 'Create draft release'
         required: false
         type: boolean
-        default: true
+        default: false
 
 concurrency:
   group: release-${{ github.ref }}
@@ -103,7 +103,7 @@ jobs:
             - **Windows**: `PHIMBOP_*_x64-setup.exe` (NSIS Installer) & `PHIMBOP_*_x64_en-US.msi`
             - **macOS**: `PHIMBOP_*_aarch64.dmg` (Apple Silicon M-series) & `PHIMBOP_*_x64.dmg` (Intel)
             - **Linux**: `PHIMBOP_*_amd64.AppImage` (Portable) & `PHIMBOP_*_amd64.deb` (Debian/Ubuntu)
-          releaseDraft: ${{ github.event.inputs.release_draft != 'false' }}
+          releaseDraft: ${{ github.event.inputs.release_draft == 'true' }}
           prerelease: false
           args: ${{ matrix.args }}
 
