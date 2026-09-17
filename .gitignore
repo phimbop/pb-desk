@@ -41,3 +41,8 @@ Thumbs.db
 # Supabase
 supabase/.temp/
 
+# Git Worktrees
+.worktrees/
+worktrees/
+
+
