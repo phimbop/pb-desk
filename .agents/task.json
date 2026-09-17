@@ -1,33 +1,26 @@
 {
-  "sessionId": "2b9fa33c-ad49-49e7-87ec-a19e61b77ee0",
-  "title": "Release new version v0.1.1 and trigger GitHub Actions release workflow",
+  "sessionId": "15d0cebb-08a1-420e-b10d-593b3fc0ac18",
+  "title": "Release v0.1.2: AppImage universal launcher wrapper with host library compatibility",
   "requirements": [
     {
       "id": "R1",
-      "description": "Desktop menu icon and launcher: Deploy multi-size icons, pixmaps, absolute icon path in phimbop.desktop, and reload desktop databases",
+      "description": "Universal launcher wrapper: Add host library preload (Wayland, GLib, PCRE2) in install.sh and verify installer tests pass",
       "checks": [
         "installer-tests"
       ]
     },
     {
       "id": "R2",
-      "description": "Tray ID isolation & crash prevention: Isolate tray ID to phimbop-tray, wrap setup in catch_unwind, set WEBKIT_DISABLE_DMABUF_RENDERER, and verify Rust checks",
+      "description": "Release version bump: Bump version to v0.1.2 across package.json, tauri.conf.json, updater service, and workspace crates",
       "checks": [
-        "rust-tests-check"
+        "updater-tests"
       ]
     },
     {
       "id": "R3",
-      "description": "Universal installer script: Support --native flag, ensure proper CLI flag precedence (--deb/--appimage), and rate-limit proof release fetching",
+      "description": "Rust and workspace tests: Ensure Rust crate unit tests pass cleanly",
       "checks": [
-        "installer-tests"
-      ]
-    },
-    {
-      "id": "R4",
-      "description": "Release version bump: Bump version to v0.1.1 across package.json, tauri.conf.json, and workspace crates",
-      "checks": [
-        "updater-tests"
+        "rust-tests-check"
       ]
     }
   ],

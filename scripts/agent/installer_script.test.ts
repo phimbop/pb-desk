@@ -77,4 +77,13 @@ describe("Universal Cross-Platform Install Script (install.sh)", () => {
     expect(output).toContain(".AppImage");
     expect(output).not.toContain(".AppImage.sig");
   });
+
+  test("install.sh generates universal launcher wrapper with host library compatibility", () => {
+    const content = readFileSync(installScriptPath, "utf-8");
+    expect(content).toContain("PHIMBOP Universal Desktop Launcher");
+    expect(content).toContain("libwayland-client.so");
+    expect(content).toContain("libglib-2.0.so");
+    expect(content).toContain("LD_PRELOAD");
+    expect(content).toContain("WEBKIT_DISABLE_DMABUF_RENDERER");
+  });
 });

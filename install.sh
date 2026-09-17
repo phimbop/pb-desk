@@ -191,8 +191,10 @@ uninstall_app() {
         # Remove local AppImage and shortcuts
         APP_BIN="$HOME/.local/bin/${BINARY_NAME}"
         DESKTOP_FILE="$HOME/.local/share/applications/phimbop.desktop"
+        APP_LIB_DIR="$HOME/.local/lib/phimbop"
 
         [ -f "$APP_BIN" ] && { log_info "Xóa $APP_BIN"; [ "$DRY_RUN" = true ] || rm -f "$APP_BIN"; }
+        [ -d "$APP_LIB_DIR" ] && { log_info "Xóa $APP_LIB_DIR"; [ "$DRY_RUN" = true ] || rm -rf "$APP_LIB_DIR"; }
         [ -f "$DESKTOP_FILE" ] && { log_info "Xóa $DESKTOP_FILE"; [ "$DRY_RUN" = true ] || rm -f "$DESKTOP_FILE"; }
 
         for size in 16x16 24x24 32x32 48x48 64x64 128x128 256x256 512x512; do
@@ -513,17 +515,64 @@ install_linux() {
         return 0
     fi
 
-    # Install AppImage
-    log_info "Đang thiết lập AppImage di động..."
+    # Install AppImage or Native Binary with Universal Launcher
+    log_info "Đang thiết lập ứng dụng và launcher tương thích đa nền tảng..."
     BIN_DIR="$HOME/.local/bin"
     APP_DIR="$HOME/.local/share/applications"
     ICON_DIR="$HOME/.local/share/icons/hicolor/128x128/apps"
+    REAL_BIN_DIR="$HOME/.local/lib/phimbop"
 
-    mkdir -p "$BIN_DIR" "$APP_DIR" "$ICON_DIR"
+    mkdir -p "$BIN_DIR" "$APP_DIR" "$ICON_DIR" "$REAL_BIN_DIR"
 
     TARGET_BIN="${BIN_DIR}/${BINARY_NAME}"
-    cp "$INSTALLER_PATH" "$TARGET_BIN"
-    chmod +x "$TARGET_BIN"
+
+    if [ "$INSTALL_FORMAT" = "native" ]; then
+        TARGET_EXEC="${REAL_BIN_DIR}/${BINARY_NAME}.bin"
+        cp "$INSTALLER_PATH" "$TARGET_EXEC"
+        chmod +x "$TARGET_EXEC"
+
+        cat << 'EOF' > "$TARGET_BIN"
+#!/usr/bin/env bash
+TARGET_REAL="$HOME/.local/lib/phimbop/phimbop.bin"
+export WEBKIT_DISABLE_DMABUF_RENDERER="${WEBKIT_DISABLE_DMABUF_RENDERER:-1}"
+exec "$TARGET_REAL" "$@"
+EOF
+        chmod +x "$TARGET_BIN"
+    else
+        TARGET_APPIMAGE="${REAL_BIN_DIR}/${BINARY_NAME}.AppImage"
+        cp "$INSTALLER_PATH" "$TARGET_APPIMAGE"
+        chmod +x "$TARGET_APPIMAGE"
+
+        cat << 'EOF' > "$TARGET_BIN"
+#!/usr/bin/env bash
+# PHIMBOP Universal Desktop Launcher
+# Resolves host libraries on modern Linux distros (Arch, Fedora, openSUSE, Ubuntu 24+)
+# to prevent WebKitGTK EGL_BAD_PARAMETER crashes and GLib/AppIndicator collisions.
+TARGET_APPIMAGE="$HOME/.local/lib/phimbop/phimbop.AppImage"
+
+PRELOAD_LIBS=()
+for lib in /usr/lib/libpcre2-8.so /usr/lib64/libpcre2-8.so; do
+    [ -f "$lib" ] && { PRELOAD_LIBS+=("$lib"); break; }
+done
+for lib in /usr/lib/libglib-2.0.so /usr/lib64/libglib-2.0.so; do
+    [ -f "$lib" ] && { PRELOAD_LIBS+=("$lib"); break; }
+done
+for lib in /usr/lib/libwayland-client.so /usr/lib64/libwayland-client.so; do
+    [ -f "$lib" ] && { PRELOAD_LIBS+=("$lib"); break; }
+done
+
+if [ ${#PRELOAD_LIBS[@]} -gt 0 ]; then
+    IFS=:
+    PRELOAD_STR="${PRELOAD_LIBS[*]}"
+    unset IFS
+    export LD_PRELOAD="${PRELOAD_STR}${LD_PRELOAD:+:$LD_PRELOAD}"
+fi
+
+export WEBKIT_DISABLE_DMABUF_RENDERER="${WEBKIT_DISABLE_DMABUF_RENDERER:-1}"
+exec "$TARGET_APPIMAGE" "$@"
+EOF
+        chmod +x "$TARGET_BIN"
+    fi
 
     # Fetch/copy app icon
     TARGET_ICON="${ICON_DIR}/${BINARY_NAME}.png"
