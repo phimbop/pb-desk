@@ -8,9 +8,10 @@ export interface ElectronAPI {
 	onEvent: (channel: string, callback: (...args: any[]) => void) => () => void;
 	updater: {
 		check: () => Promise<any>;
-		downloadAndInstall: () => Promise<void>;
+		downloadAndInstall: (url?: string) => Promise<any>;
 		relaunch: () => Promise<void>;
 	};
+	getAppVersion: () => Promise<string>;
 	autostart: {
 		get: () => Promise<boolean>;
 		set: (enable: boolean) => Promise<boolean>;
@@ -38,9 +39,10 @@ const electronAPI: ElectronAPI = {
 	},
 	updater: {
 		check: () => ipcRenderer.invoke('updater-check'),
-		downloadAndInstall: () => ipcRenderer.invoke('updater-download-install'),
+		downloadAndInstall: (url?: string) => ipcRenderer.invoke('updater-download-install', url),
 		relaunch: () => ipcRenderer.invoke('updater-relaunch')
 	},
+	getAppVersion: () => ipcRenderer.invoke('app-get-version'),
 	autostart: {
 		get: () => ipcRenderer.invoke('autostart-get'),
 		set: (enable: boolean) => ipcRenderer.invoke('autostart-set', enable)

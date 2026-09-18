@@ -456,6 +456,70 @@ ipcMain.handle('open-external-url', async (_event, url: string) => {
 	}
 });
 
+interface PendingUpdate {
+	version: string;
+	url: string;
+	filePath: string;
+	isAppImage: boolean;
+	isWindowsInstaller: boolean;
+}
+
+let latestCheckResult: { version: string; url: string; signature: string; notes: string } | null = null;
+let pendingUpdate: PendingUpdate | null = null;
+
+function resolvePlatformAsset(data: any): { url: string; signature: string } {
+	if (!data) return { url: '', signature: '' };
+	if (!data.platforms || typeof data.platforms !== 'object') {
+		return { url: data.url || '', signature: data.signature || '' };
+	}
+
+	const isArm64 = process.arch === 'arm64';
+	const isWin = process.platform === 'win32';
+	const isMac = process.platform === 'darwin';
+	const isLinux = process.platform === 'linux';
+	const isAppImage = isLinux && !!process.env.APPIMAGE;
+
+	let candidateKeys: string[] = [];
+
+	if (isWin) {
+		candidateKeys = ['windows-x86_64-nsis', 'windows-x86_64', 'windows'];
+	} else if (isMac) {
+		candidateKeys = isArm64
+			? ['darwin-aarch64', 'darwin-aarch64-app', 'darwin']
+			: ['darwin-x86_64', 'darwin-x86_64-app', 'darwin'];
+	} else if (isLinux) {
+		if (isAppImage) {
+			candidateKeys = ['linux-x86_64-appimage', 'linux-x86_64', 'linux', 'linux-x86_64-deb'];
+		} else {
+			candidateKeys = ['linux-x86_64-deb', 'linux-x86_64-appimage', 'linux-x86_64', 'linux'];
+		}
+	}
+
+	for (const key of candidateKeys) {
+		if (data.platforms[key]?.url) {
+			return {
+				url: data.platforms[key].url,
+				signature: data.platforms[key].signature || ''
+			};
+		}
+	}
+
+	for (const key of Object.keys(data.platforms)) {
+		if (data.platforms[key]?.url) {
+			return {
+				url: data.platforms[key].url,
+				signature: data.platforms[key].signature || ''
+			};
+		}
+	}
+
+	return { url: data.url || '', signature: data.signature || '' };
+}
+
+ipcMain.handle('app-get-version', () => {
+	return app.getVersion();
+});
+
 ipcMain.handle('updater-check', async () => {
 	const currentVersion = app.getVersion();
 	const target = process.platform === 'darwin' ? 'darwin' : process.platform === 'win32' ? 'windows' : 'linux';
@@ -471,18 +535,29 @@ ipcMain.handle('updater-check', async () => {
 		});
 
 		if (res.status === 204) {
+			latestCheckResult = null;
 			return { updateAvailable: false, currentVersion };
 		}
 
 		if (res.ok) {
 			const data = await res.json();
+			const asset = resolvePlatformAsset(data);
+			const notes = data.notes || data.body || '';
+
+			latestCheckResult = {
+				version: data.version,
+				url: asset.url,
+				signature: asset.signature,
+				notes
+			};
+
 			return {
 				updateAvailable: true,
 				currentVersion,
 				version: data.version,
-				notes: data.notes || data.body || '',
-				url: data.url,
-				signature: data.signature
+				notes,
+				url: asset.url,
+				signature: asset.signature
 			};
 		}
 	} catch (e: any) {
@@ -492,7 +567,196 @@ ipcMain.handle('updater-check', async () => {
 	return { updateAvailable: false, currentVersion };
 });
 
-ipcMain.handle('updater-relaunch', () => {
+ipcMain.handle('updater-download-install', async (_event, customUrl?: string) => {
+	const downloadUrl = customUrl || latestCheckResult?.url;
+	if (!downloadUrl) {
+		throw new Error('No download URL available for update');
+	}
+
+	const parsedUrl = new URL(downloadUrl);
+	const rawFilename = path.basename(parsedUrl.pathname) || 'update-package';
+	const tempDir = app.getPath('temp');
+	const tempFilePath = path.join(tempDir, `update-${Date.now()}-${rawFilename}`);
+
+	console.log(`[Updater] Downloading update from: ${downloadUrl} to ${tempFilePath}`);
+
+	const res = await fetch(downloadUrl);
+	if (!res.ok) {
+		throw new Error(`Failed to download update: HTTP ${res.status} ${res.statusText}`);
+	}
+
+	const totalBytes = Number(res.headers.get('content-length')) || 0;
+	let transferredBytes = 0;
+
+	const fileStream = fs.createWriteStream(tempFilePath);
+	const reader = res.body?.getReader();
+	if (!reader) {
+		throw new Error('Response body stream is not available');
+	}
+
+	let lastProgressTime = 0;
+
+	try {
+		while (true) {
+			const { done, value } = await reader.read();
+			if (done) break;
+
+			fileStream.write(value);
+			transferredBytes += value.length;
+
+			const now = Date.now();
+			if (now - lastProgressTime > 100 || (totalBytes > 0 && transferredBytes >= totalBytes)) {
+				lastProgressTime = now;
+				const percent = totalBytes > 0 ? Math.min(100, Math.round((transferredBytes / totalBytes) * 100)) : 0;
+				if (mainWindow && !mainWindow.isDestroyed()) {
+					mainWindow.webContents.send('updater-progress', {
+						percent,
+						transferred: transferredBytes,
+						total: totalBytes
+					});
+				}
+			}
+		}
+
+		await new Promise<void>((resolve, reject) => {
+			fileStream.end(() => resolve());
+			fileStream.on('error', reject);
+		});
+	} catch (err) {
+		fileStream.destroy();
+		try { fs.unlinkSync(tempFilePath); } catch {}
+		throw err;
+	}
+
+	const isAppImage = process.platform === 'linux' && (rawFilename.endsWith('.AppImage') || !!process.env.APPIMAGE);
+	const isWindowsInstaller = process.platform === 'win32' && rawFilename.endsWith('.exe');
+
+	if (isAppImage) {
+		try {
+			fs.chmodSync(tempFilePath, 0o755);
+		} catch (e) {
+			console.warn('[Updater] Could not chmod temp AppImage:', e);
+		}
+	}
+
+	pendingUpdate = {
+		version: latestCheckResult?.version || '',
+		url: downloadUrl,
+		filePath: tempFilePath,
+		isAppImage,
+		isWindowsInstaller
+	};
+
+	if (mainWindow && !mainWindow.isDestroyed()) {
+		mainWindow.webContents.send('updater-progress', {
+			percent: 100,
+			transferred: totalBytes > 0 ? totalBytes : transferredBytes,
+			total: totalBytes > 0 ? totalBytes : transferredBytes
+		});
+	}
+
+	return { success: true, filePath: tempFilePath };
+});
+
+ipcMain.handle('updater-relaunch', async () => {
+	if (!pendingUpdate || !fs.existsSync(pendingUpdate.filePath)) {
+		console.warn('[Updater] No downloaded update found on disk, running standard relaunch');
+		if (process.platform === 'linux' && process.env.APPIMAGE) {
+			spawn(process.env.APPIMAGE, process.argv.slice(1), { detached: true, stdio: 'ignore' }).unref();
+		} else {
+			app.relaunch();
+		}
+		app.exit(0);
+		return;
+	}
+
+	const { filePath, isAppImage, isWindowsInstaller } = pendingUpdate;
+
+	if (process.platform === 'win32' && isWindowsInstaller) {
+		console.log(`[Updater] Executing Windows NSIS installer: ${filePath}`);
+		const child = spawn(filePath, ['/S', '--updated'], {
+			detached: true,
+			stdio: 'ignore'
+		});
+		child.unref();
+		app.exit(0);
+		return;
+	}
+
+	if (process.platform === 'linux') {
+		if (isAppImage && process.env.APPIMAGE) {
+			const currentAppImage = process.env.APPIMAGE;
+			const currentDir = path.dirname(currentAppImage);
+			const cleanName = path.basename(filePath).replace(/^update-\d+-/, '');
+			const newAppImagePath = path.join(currentDir, cleanName);
+			let targetExec = newAppImagePath;
+
+			try {
+				fs.accessSync(currentDir, fs.constants.W_OK);
+				fs.renameSync(filePath, newAppImagePath);
+				fs.chmodSync(newAppImagePath, 0o755);
+
+				if (currentAppImage !== newAppImagePath) {
+					try {
+						fs.unlinkSync(currentAppImage);
+					} catch (e) {
+						console.warn('[Updater] Could not unlink old AppImage:', e);
+					}
+					// Update Linux autostart desktop entry if autostart was enabled
+					if (getAutostart()) {
+						const desktopPath = getLinuxAutostartPath();
+						if (fs.existsSync(desktopPath)) {
+							const autostartContent = [
+								'[Desktop Entry]',
+								'Type=Application',
+								'Name=PHIMBOP',
+								`Exec="${newAppImagePath}" --minimized`,
+								'Icon=phimbop',
+								'Comment=PHIMBOP - Phim gì cũng có!',
+								'Terminal=false',
+								'StartupNotify=false',
+								'Categories=AudioVideo;Video;Player;',
+								'X-GNOME-Autostart-enabled=true'
+							].join('\n') + '\n';
+							fs.writeFileSync(desktopPath, autostartContent, 'utf-8');
+						}
+					}
+				}
+			} catch (err) {
+				console.warn('[Updater] Could not move AppImage to installation directory, executing from temp:', err);
+				targetExec = filePath;
+			}
+
+			console.log(`[Updater] Launching updated AppImage: ${targetExec}`);
+			const child = spawn(targetExec, process.argv.slice(1), {
+				detached: true,
+				stdio: 'ignore'
+			});
+			child.unref();
+			app.exit(0);
+			return;
+		} else if (filePath.endsWith('.deb')) {
+			const downloadsDir = app.getPath('downloads');
+			const cleanName = path.basename(filePath).replace(/^update-\d+-/, '');
+			const destDeb = path.join(downloadsDir, cleanName);
+			try {
+				fs.renameSync(filePath, destDeb);
+				await shell.openPath(destDeb);
+			} catch {
+				await shell.openPath(filePath);
+			}
+			app.exit(0);
+			return;
+		}
+	}
+
+	if (process.platform === 'darwin') {
+		await shell.openPath(filePath);
+		app.exit(0);
+		return;
+	}
+
+	// Fallback
 	app.relaunch();
 	app.exit(0);
 });

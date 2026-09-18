@@ -58,6 +58,7 @@ export async function getOrCreateInstallationId(): Promise<string> {
 
 class UpdaterService {
 	status = $state<UpdateStatus>('idle');
+	currentVersion = $state<string>('0.1.11');
 	updateInfo = $state<UpdateInfo | null>(null);
 	progress = $state<number>(0);
 	downloadedBytes = $state<number>(0);
@@ -65,8 +66,19 @@ class UpdaterService {
 	error = $state<string | null>(null);
 	modalOpen = $state<boolean>(false);
 
-	// Lưu instance Tauri Update đang hoạt động
+	// Lưu instance Tauri/Electron Update đang hoạt động
 	private activeUpdate: any = null;
+
+	constructor() {
+		if (typeof window !== 'undefined' && (window as any).electronAPI?.getAppVersion) {
+			(window as any).electronAPI
+				.getAppVersion()
+				.then((v: string) => {
+					if (v) this.currentVersion = v;
+				})
+				.catch(() => {});
+		}
+	}
 
 	/**
 	 * Kiểm tra xem phiên bản hiện tại có thấp hơn phiên bản yêu cầu không
@@ -115,10 +127,13 @@ class UpdaterService {
 			if (typeof window !== 'undefined' && (window as any).electronAPI?.updater) {
 				const checkRes = await (window as any).electronAPI.updater.check();
 				if (checkRes && checkRes.updateAvailable) {
+					if (checkRes.currentVersion) {
+						this.currentVersion = checkRes.currentVersion;
+					}
 					update = {
 						available: true,
 						version: checkRes.version,
-						currentVersion: checkRes.currentVersion || '0.1.10',
+						currentVersion: checkRes.currentVersion || this.currentVersion,
 						body: checkRes.notes,
 						url: checkRes.url
 					};
@@ -205,7 +220,8 @@ class UpdaterService {
 				return false;
 			}
 
-			const currentVersion = '0.1.10';
+			const currentVersion = '0.1.11';
+			const activeVer = this.currentVersion || currentVersion;
 			const { data: latest } = await supabase
 				.from('app_versions')
 				.select('*')
@@ -215,16 +231,16 @@ class UpdaterService {
 				.limit(1)
 				.single();
 
-			if (latest && this.isVersionLower(currentVersion, latest.version)) {
+			if (latest && this.isVersionLower(activeVer, latest.version)) {
 				const isCritical =
 					latest.is_critical ||
 					(latest.min_supported_version
-						? this.isVersionLower(currentVersion, latest.min_supported_version)
+						? this.isVersionLower(activeVer, latest.min_supported_version)
 						: false);
 
 				this.updateInfo = {
 					version: latest.version,
-					currentVersion,
+					currentVersion: activeVer,
 					releaseNotes: latest.release_notes || '',
 					pubDate: latest.published_at,
 					isCritical,
@@ -247,19 +263,41 @@ class UpdaterService {
 	}
 
 	/**
-	 * Tải xuống và cài đặt bản cập nhật qua Tauri Updater Plugin
+	 * Tải xuống và cài đặt bản cập nhật qua Electron IPC streaming
 	 */
 	async downloadAndInstall(): Promise<void> {
-		if (!this.activeUpdate || !isTauri()) {
+		if (!this.activeUpdate) {
 			return;
 		}
 
 		this.status = 'downloading';
-		this.progress = 50;
+		this.progress = 0;
+		this.downloadedBytes = 0;
+		this.totalBytes = 0;
 		this.error = null;
 
+		let cleanupProgress: (() => void) | null = null;
+		if (typeof window !== 'undefined' && (window as any).electronAPI?.onEvent) {
+			cleanupProgress = (window as any).electronAPI.onEvent(
+				'updater-progress',
+				(data: { percent?: number; transferred?: number; total?: number }) => {
+					if (typeof data?.percent === 'number') {
+						this.progress = Math.min(100, Math.max(0, Math.round(data.percent)));
+					}
+					if (typeof data?.transferred === 'number') {
+						this.downloadedBytes = data.transferred;
+					}
+					if (typeof data?.total === 'number') {
+						this.totalBytes = data.total;
+					}
+				}
+			);
+		}
+
 		try {
-			if (typeof window !== 'undefined' && (window as any).electronAPI?.openExternal && this.activeUpdate.url) {
+			if (typeof window !== 'undefined' && (window as any).electronAPI?.updater?.downloadAndInstall) {
+				await (window as any).electronAPI.updater.downloadAndInstall(this.activeUpdate.url);
+			} else if (typeof window !== 'undefined' && (window as any).electronAPI?.openExternal && this.activeUpdate.url) {
 				await (window as any).electronAPI.openExternal(this.activeUpdate.url);
 			}
 			this.progress = 100;
@@ -268,6 +306,8 @@ class UpdaterService {
 			console.error('[Updater] Download & Install failed:', err);
 			this.status = 'error';
 			this.error = err?.message || m.updater_error_download();
+		} finally {
+			cleanupProgress?.();
 		}
 	}
 

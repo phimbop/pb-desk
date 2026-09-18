@@ -1,27 +1,26 @@
 {
   "sessionId": "53e09d65-e5d9-4f17-b29c-5cce77a55af9",
-  "title": "Release v0.1.10: Fix launch 404, standardize background running, autostart, and notifications, and sync Supabase",
+  "title": "Release v0.1.11: Production auto-updater streaming download, platform asset resolution, AppImage/NSIS relaunch, and Supabase sync",
   "requirements": [
     {
       "id": "R1",
-      "description": "Bump version to 0.1.10 across all Cargo crate manifests, package.json, updater service, and about page",
+      "description": "Bump version to 0.1.11 across all Cargo crate manifests, package.json, updater service, and about page",
       "checks": [
         "appimage-media-framework-tests"
       ]
     },
     {
       "id": "R2",
-      "description": "Fix launch 404 error and standardize background running, cross-platform autostart, and native notifications",
+      "description": "Fix auto-updater streaming download, platform asset resolution, and cross-platform relaunch flow",
       "checks": [
-        "desktop-runtime-audit-tests",
-        "electron-migration-tests"
+        "desktop-updater-flow-tests"
       ]
     },
     {
       "id": "R3",
-      "description": "Verify application build, menu removal, and release readiness before tagging",
+      "description": "Verify background running, autostart, and native notification runtime consistency",
       "checks": [
-        "menu-removal-tests"
+        "desktop-runtime-audit-tests"
       ]
     }
   ],
@@ -38,34 +37,23 @@
       "testFormat": "bun"
     },
     {
+      "id": "desktop-updater-flow-tests",
+      "command": [
+        "bun",
+        "--no-env-file",
+        "test",
+        "scripts/agent/desktop_updater_flow.test.ts"
+      ],
+      "timeoutMs": 60000,
+      "testFormat": "bun"
+    },
+    {
       "id": "desktop-runtime-audit-tests",
       "command": [
         "bun",
         "--no-env-file",
         "test",
         "scripts/agent/desktop_runtime_audit.test.ts"
-      ],
-      "timeoutMs": 60000,
-      "testFormat": "bun"
-    },
-    {
-      "id": "electron-migration-tests",
-      "command": [
-        "bun",
-        "--no-env-file",
-        "test",
-        "scripts/agent/electron_migration.test.ts"
-      ],
-      "timeoutMs": 60000,
-      "testFormat": "bun"
-    },
-    {
-      "id": "menu-removal-tests",
-      "command": [
-        "bun",
-        "--no-env-file",
-        "test",
-        "scripts/agent/menu_removal.test.ts"
       ],
       "timeoutMs": 60000,
       "testFormat": "bun"
