@@ -1551,39 +1551,39 @@ export const profile_title = /** @type {(inputs: Profile_TitleInputs) => Localiz
 };
 
 export const profile_notifications = /** @type {(inputs: Profile_NotificationsInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Notifications`)
+	return /** @type {LocalizedString} */ (`通知`)
 };
 
 export const notifications_empty = /** @type {(inputs: Notifications_EmptyInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`You have no notifications`)
+	return /** @type {LocalizedString} */ (`暂无新通知`)
 };
 
 export const notifications_mark_all_read = /** @type {(inputs: Notifications_Mark_All_ReadInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Mark all as read`)
+	return /** @type {LocalizedString} */ (`全部标为已读`)
 };
 
 export const notifications_delete_all = /** @type {(inputs: Notifications_Delete_AllInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Delete all`)
+	return /** @type {LocalizedString} */ (`全部删除`)
 };
 
 export const notifications_delete = /** @type {(inputs: Notifications_DeleteInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Delete`)
+	return /** @type {LocalizedString} */ (`删除`)
 };
 
 export const notifications_title = /** @type {(inputs: Notifications_TitleInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`My Notifications`)
+	return /** @type {LocalizedString} */ (`我的通知`)
 };
 
 export const notification_mention_content = /** @type {(inputs: Notification_Mention_ContentInputs) => LocalizedString} */ (i) => {
-	return /** @type {LocalizedString} */ (`${i?.username} mentioned you in a comment: "${i?.text}"`)
+	return /** @type {LocalizedString} */ (`${i?.username} 在评论中提到了你: "${i?.text}"`)
 };
 
 export const notification_type_mention = /** @type {(inputs: Notification_Type_MentionInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Mention`)
+	return /** @type {LocalizedString} */ (`提及`)
 };
 
 export const notification_type_system = /** @type {(inputs: Notification_Type_SystemInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`System`)
+	return /** @type {LocalizedString} */ (`系统`)
 };
 
 export const profile_member_since = /** @type {(inputs: Profile_Member_SinceInputs) => LocalizedString} */ () => {

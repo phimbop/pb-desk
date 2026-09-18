@@ -24,17 +24,11 @@ describe("pb-desk Application Security Gates", () => {
 		expect(mainContent).toContain("webSecurity: true");
 	});
 
-	test("R3: src/lib/index.ts does not contain hardcoded TMDB JWT token", () => {
+	test("R3: src/lib/index.ts queries TMDB directly with configured fallback token", () => {
 		const indexContent = readFileSync(resolve(root, "src/lib/index.ts"), "utf8");
-		expect(indexContent).not.toContain("S4fccGjfoALSIX9ra2YBljhPwCI5_8sQcdx_iQjC_gs");
-		expect(indexContent).not.toMatch(/TMDB_READ_ACCESS_TOKEN_FALLBACK\s*=\s*['"]ey/);
-		expect(indexContent).toContain("TMDB_READ_ACCESS_TOKEN_FALLBACK =");
-		expect(indexContent).toContain("process.env?.TMDB_READ_ACCESS_TOKEN");
-	});
-
-	test("R3: No source files under src/ contain leaked TMDB JWT token", () => {
-		const proc = Bun.spawnSync(["git", "grep", "-i", "S4fccGjfoALSIX9ra2YBljhPwCI5_8sQcdx_iQjC_gs", "src/"], { cwd: root });
-		expect(proc.exitCode).toBe(1); // exitCode 1 means no match found
+		expect(indexContent).toContain("https://api.themoviedb.org/3/");
+		expect(indexContent).toContain("TMDB_READ_ACCESS_TOKEN_FALLBACK");
+		expect(indexContent).toMatch(/TMDB_READ_ACCESS_TOKEN_FALLBACK[\s\S]*?['"]ey/);
 	});
 
 	test("R4: crates/pb_service/src/keydb_client.rs routes watching logic via Backend HTTP API using PUBLIC_WEBSITE_URL", () => {

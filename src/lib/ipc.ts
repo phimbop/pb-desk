@@ -16,7 +16,8 @@ import type {
 	AppSettings,
 	MovieUpdateEvent
 } from './types';
-import { getApiUrl, websiteUrl } from './index';
+import { getApiUrl, getWebsiteUrl, websiteUrl } from './index';
+import { unflatten } from 'devalue';
 
 // Check if running inside Electron webview / desktop app
 export const isElectron = (): boolean => {
@@ -332,6 +333,31 @@ async function fallbackApi<T>(command: string, args?: Record<string, unknown>): 
 					return JSON.parse(cached) as T;
 				} catch (_) {}
 			}
+			try {
+				const res = await fetch(`${getWebsiteUrl()}/phim-18-cong/__data.json`);
+				if (res.ok) {
+					const json = await res.json();
+					const nodeData =
+						json.nodes?.find((n: any) => n?.data && (n.data[0]?.movie18 !== undefined || n.data.movie18 !== undefined))?.data ||
+						json.nodes?.[1]?.data;
+					if (nodeData) {
+						const unflattened = unflatten(nodeData) as any;
+						const rawList = unflattened?.movie18;
+						const list = Array.isArray(rawList?.[0]) ? rawList[0] : rawList;
+						if (Array.isArray(list) && list.length > 0) {
+							if (typeof sessionStorage !== 'undefined') {
+								try {
+									sessionStorage.setItem('pb_adult_movies', JSON.stringify(list));
+								} catch (_) {}
+							}
+							return list as T;
+						}
+					}
+				}
+			} catch (err) {
+				console.warn('[API] Could not fetch adult movies via api_domain:', err);
+			}
+
 			const res = await fetch(SURREAL_SQL_ENDPOINT, {
 				method: 'POST',
 				headers: getSurrealHeaders(),
@@ -353,6 +379,29 @@ async function fallbackApi<T>(command: string, args?: Record<string, unknown>): 
 					return JSON.parse(cached) as T;
 				} catch (_) {}
 			}
+			try {
+				const res = await fetch(`${getWebsiteUrl()}/bang-xep-hang/__data.json`);
+				if (res.ok) {
+					const json = await res.json();
+					const nodeData =
+						json.nodes?.find((n: any) => n?.data && (n.data[0]?.leaderboards !== undefined || n.data.leaderboards !== undefined))?.data ||
+						json.nodes?.[1]?.data;
+					if (nodeData) {
+						const unflattened = unflatten(nodeData) as any;
+						if (unflattened?.leaderboards) {
+							if (typeof sessionStorage !== 'undefined') {
+								try {
+									sessionStorage.setItem('pb_leaderboards_monthly', JSON.stringify(unflattened.leaderboards));
+								} catch (_) {}
+							}
+							return unflattened.leaderboards as T;
+						}
+					}
+				}
+			} catch (err) {
+				console.warn('[API] Could not fetch leaderboards via api_domain:', err);
+			}
+
 			const startOfMonth = new Date();
 			startOfMonth.setDate(1);
 			startOfMonth.setHours(0, 0, 0, 0);
@@ -610,9 +659,48 @@ export const api = {
 		safeInvoke<PaginatedResponse<FavoriteMovie>>('get_favorites', { page, limit }),
 	toggleFavorite: (req: Omit<FavoriteMovie, 'id' | 'created_at'>) =>
 		safeInvoke<boolean>('toggle_favorite', { req }),
-	isFavorite: (movieSlug: string) => safeInvoke<boolean>('is_favorite', { movieSlug, movie_slug: movieSlug }),
-	getAdultMovies: () => safeInvoke<AdultMovieRecord[]>('get_adult_movies'),
-	getLeaderboards: () => safeInvoke<Leaderboards>('get_leaderboards'),
+	getAdultMovies: async (): Promise<AdultMovieRecord[]> => {
+		try {
+			const res = await fetch(`${getWebsiteUrl()}/phim-18-cong/__data.json`);
+			if (res.ok) {
+				const json = await res.json();
+				const nodeData =
+					json.nodes?.find((n: any) => n?.data && (n.data[0]?.movie18 !== undefined || n.data.movie18 !== undefined))?.data ||
+					json.nodes?.[1]?.data;
+				if (nodeData) {
+					const unflattened = unflatten(nodeData) as any;
+					const rawList = unflattened?.movie18;
+					const list = Array.isArray(rawList?.[0]) ? rawList[0] : rawList;
+					if (Array.isArray(list) && list.length > 0) {
+						return list as AdultMovieRecord[];
+					}
+				}
+			}
+		} catch (err) {
+			console.warn('[API] Fetching adult movies via api_domain failed, falling back to sidecar:', err);
+		}
+		return safeInvoke<AdultMovieRecord[]>('get_adult_movies');
+	},
+	getLeaderboards: async (): Promise<Leaderboards> => {
+		try {
+			const res = await fetch(`${getWebsiteUrl()}/bang-xep-hang/__data.json`);
+			if (res.ok) {
+				const json = await res.json();
+				const nodeData =
+					json.nodes?.find((n: any) => n?.data && (n.data[0]?.leaderboards !== undefined || n.data.leaderboards !== undefined))?.data ||
+					json.nodes?.[1]?.data;
+				if (nodeData) {
+					const unflattened = unflatten(nodeData) as any;
+					if (unflattened?.leaderboards) {
+						return unflattened.leaderboards as Leaderboards;
+					}
+				}
+			}
+		} catch (err) {
+			console.warn('[API] Fetching leaderboards via api_domain failed, falling back to sidecar:', err);
+		}
+		return safeInvoke<Leaderboards>('get_leaderboards');
+	},
 	getWatchingList: (limit = 10) => safeInvoke<WatchingItem[]>('get_watching_list', { limit }),
 	recordWatchingHeartbeat: (movieId: string, sessionId: string) =>
 		safeInvoke<void>('record_watching_heartbeat', {

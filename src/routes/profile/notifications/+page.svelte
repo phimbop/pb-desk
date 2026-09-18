@@ -2,7 +2,7 @@
 	import { m } from '$lib/paraglide/messages';
 	import { fade, slide } from 'svelte/transition';
 	import { unreadNotificationsCount } from '$lib/runes/notificationStore.svelte';
-	import { localizeHref } from '$lib/paraglide/runtime';
+	import { localizeHref, getLocale } from '$lib/paraglide/runtime';
 	import { appFetch } from '$lib/ipc';
 
 	interface NotificationItem {
@@ -117,11 +117,21 @@
 		const diffHour = Math.floor(diffMs / 3600000);
 		const diffDay = Math.floor(diffMs / 86400000);
 
-		if (diffMin < 1) return 'just now';
-		if (diffMin < 60) return `${diffMin}m`;
-		if (diffHour < 24) return `${diffHour}h`;
-		if (diffDay < 30) return `${diffDay}d`;
-		return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+		try {
+			const locale = getLocale();
+			const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+			if (diffMin < 1) return rtf.format(0, 'second');
+			if (diffMin < 60) return rtf.format(-diffMin, 'minute');
+			if (diffHour < 24) return rtf.format(-diffHour, 'hour');
+			if (diffDay < 30) return rtf.format(-diffDay, 'day');
+			return date.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
+		} catch {
+			if (diffMin < 1) return 'just now';
+			if (diffMin < 60) return `${diffMin}m`;
+			if (diffHour < 24) return `${diffHour}h`;
+			if (diffDay < 30) return `${diffDay}d`;
+			return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+		}
 	}
 </script>
 

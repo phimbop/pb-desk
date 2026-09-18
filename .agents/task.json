@@ -1,76 +1,64 @@
 {
-  "sessionId": "1b661d08-1b69-46b9-b74f-5e07fa855bad",
-  "title": "Release v0.1.13 via GitHub Actions and sync release assets to Supabase app_versions",
+  "sessionId": "03561787-74ed-499b-9d3d-73c3f8d2c408",
+  "title": "Desktop App Multi-language Notification Support and Runtime Audit QA Gate",
   "requirements": [
     {
       "id": "R1",
-      "description": "Maintain hardened application security (sandbox, updater RCE guard, TMDB token sanitation, KeyDB HTTP API migration)",
+      "description": "Support multi-language OS notifications and system tray menu in Electron main process with dynamic locale resolution and IPC synchronization",
       "checks": [
-        "app-security-tests",
-        "updater-flow-tests",
-        "surreal-rust-tests"
+        "desktop-runtime-audit",
+        "notification-multilang-test"
       ]
     },
     {
       "id": "R2",
-      "description": "Ensure version consistency across package.json, Cargo crate manifests, updater service, and UI for v0.1.13",
+      "description": "Synchronize active locale from Frontend to Electron Main Process and localize notification relative time formatting",
       "checks": [
-        "version-consistency-tests"
+        "notification-multilang-test"
       ]
     },
     {
       "id": "R3",
-      "description": "Multi-platform release workflow and Supabase app_versions synchronization readiness",
+      "description": "Provide complete non-empty localized notification strings across all 17 supported locales in Paraglide",
       "checks": [
-        "version-consistency-tests",
-        "updater-flow-tests"
+        "notification-multilang-test",
+        "i18n-audit-tests"
       ]
     }
   ],
   "checks": [
     {
-      "id": "app-security-tests",
+      "id": "desktop-runtime-audit",
       "command": [
         "bun",
         "--no-env-file",
         "test",
-        "scripts/agent/surreal_security.test.ts"
+        "scripts/agent/desktop_runtime_audit.test.ts"
       ],
       "timeoutMs": 60000,
       "testFormat": "bun"
     },
     {
-      "id": "updater-flow-tests",
+      "id": "notification-multilang-test",
       "command": [
         "bun",
         "--no-env-file",
         "test",
-        "scripts/agent/desktop_updater_flow.test.ts"
+        "scripts/agent/notification_multilang.test.ts"
       ],
       "timeoutMs": 60000,
       "testFormat": "bun"
     },
     {
-      "id": "version-consistency-tests",
+      "id": "i18n-audit-tests",
       "command": [
         "bun",
         "--no-env-file",
         "test",
-        "scripts/agent/appimage_media_framework.test.ts"
+        "scripts/agent/i18n.test.ts"
       ],
       "timeoutMs": 60000,
       "testFormat": "bun"
-    },
-    {
-      "id": "surreal-rust-tests",
-      "command": [
-        "cargo",
-        "test",
-        "-p",
-        "pb_service"
-      ],
-      "timeoutMs": 60000,
-      "testFormat": "cargo"
     }
   ]
 }

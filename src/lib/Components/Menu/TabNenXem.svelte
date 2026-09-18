@@ -8,6 +8,7 @@
 	import { DOMAIN_TMDB_IMAGE_CDN, websiteUrl } from '$lib';
 	import { getLocale } from '$lib/paraglide/runtime';
 	import { onMount } from 'svelte';
+	import LoadingSubBlur from '../LoadingSubBlur.svelte';
 	let movies = $state(page.data.topRatedMovies ?? { results: [], total_pages: 0 });
 	let currentPageTopRated = $state(page.data.topRatedMovies?.page ?? 1);
 	let loading = $state(false);
@@ -69,11 +70,16 @@
 		}}
 	/>
 {/key}
-<section class="w-full h-full grid md:grid-cols-5 lg:grid-cols-10 gap-2">
-	{#each (movies?.results || []) as movie, i (movie.id)}
-		<CardMovieFilter {movie} showDate={false} class="" />
-	{/each}
-</section>
+<div class="relative w-full h-full">
+	{#if loading}
+		<LoadingSubBlur />
+	{/if}
+	<section class="w-full h-full grid md:grid-cols-5 lg:grid-cols-10 gap-2">
+		{#each (movies?.results || []) as movie, i (movie.id)}
+			<CardMovieFilter {movie} showDate={false} class="" />
+		{/each}
+	</section>
+</div>
 
 <section class="flex flex-col items-center mx-auto w-full container">
 	<Paginations

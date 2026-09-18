@@ -27,6 +27,9 @@
 
 	function changeLanguage(locale: string) {
 		setLocale(locale as any);
+		if (typeof window !== 'undefined' && (window as any).electronAPI?.setLocale) {
+			(window as any).electronAPI.setLocale(locale);
+		}
 		isOpen = false;
 	}
 

@@ -6,7 +6,7 @@
 	import LoadingSubBlur from '$lib/Components/LoadingSubBlur.svelte';
 	import UpdateModal from '$lib/Components/Modal/UpdateModal.svelte';
 	import { isPlaying } from '$lib/runes/movieStore.svelte';
-	import { deLocalizeUrl } from '$lib/paraglide/runtime';
+	import { deLocalizeUrl, getLocale } from '$lib/paraglide/runtime';
 	import { setupGlobalOpener, syncRemoteApiDomain } from '$lib';
 	import { isTauri } from '$lib/ipc';
 	import { onMount } from 'svelte';
@@ -22,6 +22,10 @@
 		syncRemoteApiDomain();
 
 		if (isTauri()) {
+			if (typeof window !== 'undefined' && (window as any).electronAPI?.setLocale) {
+				(window as any).electronAPI.setLocale(getLocale());
+			}
+
 			if (typeof window !== 'undefined' && (window as any).electronAPI?.onEvent) {
 				(window as any).electronAPI.onEvent('movie-update', (event: any) => {
 					console.log('[Notification Event Received]:', event);

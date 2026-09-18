@@ -67,4 +67,22 @@ describe('Desktop Runtime Production Audit: 404 Bug, Background, Autostart & Not
 		// Notifications must handle click to restore/show/focus window
 		expect(mainTs).toMatch(/(\.on\('click'|onclick)/);
 	});
+
+	it('R5: Notifications and tray menu support multi-language dynamic resolution and IPC sync', () => {
+		const mainTs = fs.readFileSync(path.join(rootDir, 'electron/main.ts'), 'utf-8');
+		const preloadTs = fs.readFileSync(path.join(rootDir, 'electron/preload.ts'), 'utf-8');
+
+		// Must import and use formatMovieNotification and getTrayLabels
+		expect(mainTs).toContain('formatMovieNotification');
+		expect(mainTs).toContain('getTrayLabels');
+
+		// Must handle set-locale and get-locale IPC
+		expect(mainTs).toContain("'set-locale'");
+		expect(mainTs).toContain("'get-locale'");
+		expect(preloadTs).toContain('setLocale');
+		expect(preloadTs).toContain('getLocale');
+
+		// Must dynamically update tray menu on locale change
+		expect(mainTs).toContain('updateTrayMenu');
+	});
 });

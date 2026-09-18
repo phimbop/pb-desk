@@ -1551,39 +1551,39 @@ export const profile_title = /** @type {(inputs: Profile_TitleInputs) => Localiz
 };
 
 export const profile_notifications = /** @type {(inputs: Profile_NotificationsInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Notifications`)
+	return /** @type {LocalizedString} */ (`알림`)
 };
 
 export const notifications_empty = /** @type {(inputs: Notifications_EmptyInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`You have no notifications`)
+	return /** @type {LocalizedString} */ (`새로운 알림이 없습니다`)
 };
 
 export const notifications_mark_all_read = /** @type {(inputs: Notifications_Mark_All_ReadInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Mark all as read`)
+	return /** @type {LocalizedString} */ (`모두 읽음으로 표시`)
 };
 
 export const notifications_delete_all = /** @type {(inputs: Notifications_Delete_AllInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Delete all`)
+	return /** @type {LocalizedString} */ (`모두 삭제`)
 };
 
 export const notifications_delete = /** @type {(inputs: Notifications_DeleteInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Delete`)
+	return /** @type {LocalizedString} */ (`삭제`)
 };
 
 export const notifications_title = /** @type {(inputs: Notifications_TitleInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`My Notifications`)
+	return /** @type {LocalizedString} */ (`내 알림`)
 };
 
 export const notification_mention_content = /** @type {(inputs: Notification_Mention_ContentInputs) => LocalizedString} */ (i) => {
-	return /** @type {LocalizedString} */ (`${i?.username} mentioned you in a comment: "${i?.text}"`)
+	return /** @type {LocalizedString} */ (`${i?.username}님이 댓글에서 회원님을 언급했습니다: "${i?.text}"`)
 };
 
 export const notification_type_mention = /** @type {(inputs: Notification_Type_MentionInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Mention`)
+	return /** @type {LocalizedString} */ (`멘션`)
 };
 
 export const notification_type_system = /** @type {(inputs: Notification_Type_SystemInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`System`)
+	return /** @type {LocalizedString} */ (`시스템`)
 };
 
 export const profile_member_since = /** @type {(inputs: Profile_Member_SinceInputs) => LocalizedString} */ () => {

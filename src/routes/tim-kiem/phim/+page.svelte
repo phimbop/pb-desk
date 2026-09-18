@@ -150,17 +150,19 @@
 		}
 	});
 
-	const handlers = {
-		btnFilterClicked: async () => {
-			loading = true;
-			await handlePageChange(1);
-			currentPage = 1;
-			loading = false;
-		}
+	let lastFetchedKey = $state<string | null>(null);
+
+	const getFilterKey = (pageNumber: number) => {
+		const f = tmdbFilterMoviesStore.value || {};
+		return `${pageNumber}|${f.movieTitle || ''}|${(f.movieGenres || []).join(',')}|${(f.country || []).join(',')}|${(f.year || []).join(',')}`;
 	};
 
-	const handlePageChange = async (pageNumber: number) => {
+	const handlePageChange = async (pageNumber: number, force = false) => {
+		if (loading) return;
+		const key = getFilterKey(pageNumber);
+		if (!force && lastFetchedKey === key) return;
 		loading = true;
+		lastFetchedKey = key;
 		try {
 			[tmdbMovieSearchResult, tmdbTvSearchResult, kkMovieResult] = await Promise.all([
 				moviesHandler.tmdbFilterMovies(pageNumber, 'movie', getLocale()),
@@ -175,9 +177,19 @@
 		}
 	};
 
+	const handlers = {
+		btnFilterClicked: async () => {
+			currentPage = 1;
+			await handlePageChange(1, true);
+		}
+	};
+
 	$effect(() => {
-		if (mounted && currentPage !== tmdbFilteredMoviesListStore.value?.page) {
-			handlePageChange(currentPage);
+		if (mounted && currentPage) {
+			const loadedPage = tmdbFilteredMoviesListStore.value?.page;
+			if (currentPage !== loadedPage && !loading) {
+				handlePageChange(currentPage);
+			}
 		}
 	});
 

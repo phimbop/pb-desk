@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { domainMovies, tmdbEndpoint, tmdbOptionApi, getTmdbUrl, getTmdbHeaders, patternKKImageDomain } from '$lib';
+import { domainMovies, tmdbEndpoint, tmdbOptionApi, getTmdbUrl, getTmdbHeaders, getWebsiteUrl, patternKKImageDomain } from '$lib';
 import { appFetch } from '$lib/ipc';
 import { useSurrealDB } from './createStore.svelte';
 import type { TmdbMovieDetail, TmdbMovieList, FilterType, TmdbMovies } from '../../types/Tmdb';
@@ -147,10 +147,40 @@ export const moviesHandler = {
 			}
 
 			const apiUrl = getTmdbUrl(`discover/${movieType}?${params.toString()}`);
-			const result = await fetch(apiUrl, { headers: getTmdbHeaders() });
-			return await result.json();
+			let result: Response | null = null;
+			try {
+				result = await fetch(apiUrl, { headers: getTmdbHeaders() });
+			} catch (fetchErr) {
+				console.warn(`[TMDB] Filter ${movieType} fetch failed from ${apiUrl}:`, fetchErr);
+			}
+
+			if (!result || !result.ok) {
+				const proxyUrl = `${getWebsiteUrl()}/api/tmdb/discover/${movieType}?${params.toString()}`;
+				if (apiUrl !== proxyUrl) {
+					console.log(`[TMDB] Retrying filter via backend proxy: ${proxyUrl}`);
+					try {
+						result = await fetch(proxyUrl, { headers: { accept: 'application/json' } });
+					} catch (proxyErr) {
+						console.error(`[TMDB] Retry via backend proxy failed:`, proxyErr);
+					}
+				}
+			}
+
+			if (!result || !result.ok) {
+				console.warn(`[TMDB] Filter ${movieType} returned non-ok status: ${result?.status}`);
+				return { page: page, results: [], total_pages: 0, total_results: 0 };
+			}
+			const data = await result.json();
+			if (!data || typeof data !== 'object' || !Array.isArray(data.results)) {
+				return { page: page, results: [], total_pages: 0, total_results: 0 };
+			}
+			if (typeof data.page !== 'number') {
+				data.page = page;
+			}
+			return data;
 		} catch (error) {
-			throw error;
+			console.error(`[TMDB] Error filtering ${movieType}:`, error);
+			return { page: page, results: [], total_pages: 0, total_results: 0 };
 		}
 	},
 	tmdbGetActorInfo: async (actorId: number, language = 'vi-VN') => {
@@ -170,9 +200,17 @@ export const moviesHandler = {
 				getTmdbUrl(`movie/top_rated?language=${language}&page=${page}`),
 				{ headers: getTmdbHeaders() }
 			);
-			return await result.json();
+			if (!result.ok) {
+				return { page: page, results: [], total_pages: 0, total_results: 0 };
+			}
+			const data = await result.json();
+			if (data && typeof data.page !== 'number') {
+				data.page = page;
+			}
+			return data;
 		} catch (error) {
-			throw error;
+			console.error('Failed to fetch top rated movies:', error);
+			return { page: page, results: [], total_pages: 0, total_results: 0 };
 		}
 	},
 	tmdbGetPopularActors: async (page: number, language = 'vi-VN') => {

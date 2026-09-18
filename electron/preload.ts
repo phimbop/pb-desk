@@ -17,6 +17,12 @@ export interface ElectronAPI {
 		set: (enable: boolean) => Promise<boolean>;
 	};
 	showNotification: (title: string, body: string) => Promise<boolean>;
+	setLocale: (locale: string) => Promise<boolean>;
+	getLocale: () => Promise<string>;
+	locale: {
+		get: () => Promise<string>;
+		set: (locale: string) => Promise<boolean>;
+	};
 }
 
 const electronAPI: ElectronAPI = {
@@ -47,7 +53,13 @@ const electronAPI: ElectronAPI = {
 		get: () => ipcRenderer.invoke('autostart-get'),
 		set: (enable: boolean) => ipcRenderer.invoke('autostart-set', enable)
 	},
-	showNotification: (title: string, body: string) => ipcRenderer.invoke('show-notification', { title, body })
+	showNotification: (title: string, body: string) => ipcRenderer.invoke('show-notification', { title, body }),
+	setLocale: (locale: string) => ipcRenderer.invoke('set-locale', locale),
+	getLocale: () => ipcRenderer.invoke('get-locale'),
+	locale: {
+		get: () => ipcRenderer.invoke('get-locale'),
+		set: (locale: string) => ipcRenderer.invoke('set-locale', locale)
+	}
 };
 
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);

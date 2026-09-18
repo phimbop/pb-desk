@@ -33,6 +33,9 @@
 	function handleLanguageChange(newLocale: string) {
 		if (newLocale !== currentLocale) {
 			setLocale(newLocale as any);
+			if (typeof window !== 'undefined' && (window as any).electronAPI?.setLocale) {
+				(window as any).electronAPI.setLocale(newLocale);
+			}
 		}
 	}
 

@@ -1,7 +1,7 @@
 {
 	"name": "pb-desk",
 	"private": true,
-	"version": "0.1.13",
+	"version": "0.1.14",
 	"author": "phimbop <phimbop@duck.com>",
 	"main": "electron/dist/main.cjs",
 	"type": "module",
@@ -46,6 +46,7 @@
 	"dependencies": {
 		"@supabase/supabase-js": "^2.116.0",
 		"clsx": "^2.1.1",
+		"devalue": "^5.9.2",
 		"embla-carousel": "^8.6.0",
 		"embla-carousel-autoplay": "^8.6.0",
 		"hls.js": "^1.5.20",

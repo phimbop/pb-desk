@@ -1551,39 +1551,39 @@ export const profile_title = /** @type {(inputs: Profile_TitleInputs) => Localiz
 };
 
 export const profile_notifications = /** @type {(inputs: Profile_NotificationsInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Notifications`)
+	return /** @type {LocalizedString} */ (`Уведомления`)
 };
 
 export const notifications_empty = /** @type {(inputs: Notifications_EmptyInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`You have no notifications`)
+	return /** @type {LocalizedString} */ (`У вас нет уведомлений`)
 };
 
 export const notifications_mark_all_read = /** @type {(inputs: Notifications_Mark_All_ReadInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Mark all as read`)
+	return /** @type {LocalizedString} */ (`Отметить все как прочитанные`)
 };
 
 export const notifications_delete_all = /** @type {(inputs: Notifications_Delete_AllInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Delete all`)
+	return /** @type {LocalizedString} */ (`Удалить все`)
 };
 
 export const notifications_delete = /** @type {(inputs: Notifications_DeleteInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Delete`)
+	return /** @type {LocalizedString} */ (`Удалить`)
 };
 
 export const notifications_title = /** @type {(inputs: Notifications_TitleInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`My Notifications`)
+	return /** @type {LocalizedString} */ (`Мои уведомления`)
 };
 
 export const notification_mention_content = /** @type {(inputs: Notification_Mention_ContentInputs) => LocalizedString} */ (i) => {
-	return /** @type {LocalizedString} */ (`${i?.username} mentioned you in a comment: "${i?.text}"`)
+	return /** @type {LocalizedString} */ (`${i?.username} упомянул вас в комментарии: "${i?.text}"`)
 };
 
 export const notification_type_mention = /** @type {(inputs: Notification_Type_MentionInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Mention`)
+	return /** @type {LocalizedString} */ (`Упоминание`)
 };
 
 export const notification_type_system = /** @type {(inputs: Notification_Type_SystemInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`System`)
+	return /** @type {LocalizedString} */ (`Система`)
 };
 
 export const profile_member_since = /** @type {(inputs: Profile_Member_SinceInputs) => LocalizedString} */ () => {

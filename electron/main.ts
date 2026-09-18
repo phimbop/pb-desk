@@ -3,7 +3,9 @@ import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as readline from 'node:readline';
+import * as os from 'node:os';
 import { pathToFileURL } from 'node:url';
+import { formatMovieNotification, getTrayLabels, isSupportedLocale, normalizeLocale } from './i18n';
 
 // Set Application User Model ID on Windows for native notifications
 if (process.platform === 'win32') {
@@ -35,6 +37,39 @@ let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let isQuitting = false;
 let cachedMinimizeToTray = true;
+let cachedLocale = 'vi';
+
+function getLocaleFilePath(): string {
+	return path.join(app.getPath('userData'), 'app-locale.txt');
+}
+
+function loadPersistedLocale(): string {
+	try {
+		const filePath = getLocaleFilePath();
+		if (fs.existsSync(filePath)) {
+			const saved = fs.readFileSync(filePath, 'utf-8').trim();
+			if (saved && isSupportedLocale(saved)) {
+				return saved;
+			}
+		}
+	} catch (e) {
+		console.warn('[Electron] Failed to read persisted locale:', e);
+	}
+	return 'vi';
+}
+
+function savePersistedLocale(loc: string): void {
+	try {
+		const dir = app.getPath('userData');
+		if (!fs.existsSync(dir)) {
+			fs.mkdirSync(dir, { recursive: true });
+		}
+		const filePath = getLocaleFilePath();
+		fs.writeFileSync(filePath, loc, 'utf-8');
+	} catch (e) {
+		console.warn('[Electron] Failed to write persisted locale:', e);
+	}
+}
 let sidecarProcess: ChildProcessWithoutNullStreams | null = null;
 let nextRequestId = 1;
 const pendingRequests = new Map<
@@ -144,13 +179,7 @@ function startSidecar() {
 			if (parsed.type === 'event') {
 				if (parsed.event === 'movie-update') {
 					const ev = parsed.data;
-					const movieName = ev.movieName || ev.movie_name || 'Phim';
-					const title = ev.isNewMovie
-						? '🎬 PHIMBOP - Phim mới cập nhật!'
-						: `🔥 Tập mới: ${movieName}`;
-					const body = ev.episode
-						? `${movieName} vừa cập nhật ${ev.episode}!`
-						: `${movieName} đã có mặt trên PHIMBOP!`;
+					const { title, body } = formatMovieNotification(ev, cachedLocale);
 
 					showNativeNotification(title, body, () => {
 						if (mainWindow) {
@@ -233,6 +262,40 @@ function invokeSidecar<T = any>(method: string, params: Record<string, unknown> 
 	});
 }
 
+function updateTrayMenu(locale: string = cachedLocale) {
+	if (!tray) return;
+	const labels = getTrayLabels(locale);
+	const contextMenu = Menu.buildFromTemplate([
+		{
+			label: labels.open,
+			click: () => {
+				if (mainWindow) {
+					if (mainWindow.isMinimized()) mainWindow.restore();
+					mainWindow.show();
+					mainWindow.focus();
+				}
+			}
+		},
+		{
+			label: labels.checkUpdates,
+			click: () => {
+				if (mainWindow) {
+					mainWindow.webContents.send('trigger-check-update');
+				}
+			}
+		},
+		{ type: 'separator' },
+		{
+			label: labels.quit,
+			click: () => {
+				isQuitting = true;
+				app.quit();
+			}
+		}
+	]);
+	tray.setContextMenu(contextMenu);
+}
+
 function createTray() {
 	const appRoot = getAppRoot();
 	const iconPath = app.isPackaged
@@ -241,36 +304,8 @@ function createTray() {
 
 	if (fs.existsSync(iconPath)) {
 		tray = new Tray(iconPath);
-		const contextMenu = Menu.buildFromTemplate([
-			{
-				label: 'Mở PHIMBOP',
-				click: () => {
-					if (mainWindow) {
-						if (mainWindow.isMinimized()) mainWindow.restore();
-						mainWindow.show();
-						mainWindow.focus();
-					}
-				}
-			},
-			{
-				label: 'Kiểm tra cập nhật',
-				click: () => {
-					if (mainWindow) {
-						mainWindow.webContents.send('trigger-check-update');
-					}
-				}
-			},
-			{ type: 'separator' },
-			{
-				label: 'Thoát',
-				click: () => {
-					isQuitting = true;
-					app.quit();
-				}
-			}
-		]);
 		tray.setToolTip('PHIMBOP - Phim gì cũng có!');
-		tray.setContextMenu(contextMenu);
+		updateTrayMenu(cachedLocale);
 		tray.on('click', () => {
 			if (mainWindow) {
 				if (mainWindow.isVisible()) {
@@ -598,6 +633,17 @@ function isTrustedUpdateUrl(urlStr: string): boolean {
 	}
 }
 
+function resolveTargetAppImage(): string | null {
+	if (process.env.APPIMAGE && fs.existsSync(process.env.APPIMAGE)) {
+		return process.env.APPIMAGE;
+	}
+	const standardPath = path.join(os.homedir(), '.local/lib/phimbop/phimbop.AppImage');
+	if (fs.existsSync(standardPath)) {
+		return standardPath;
+	}
+	return null;
+}
+
 ipcMain.handle('updater-download-install', async (_event, customUrl?: string) => {
 	const downloadUrl = customUrl || latestCheckResult?.url;
 	if (!downloadUrl) {
@@ -696,6 +742,24 @@ ipcMain.handle('updater-download-install', async (_event, customUrl?: string) =>
 		} catch (e) {
 			console.warn('[Updater] Could not chmod temp AppImage:', e);
 		}
+
+		// Immediately replace target AppImage so even if user closes/quits the app instead
+		// of clicking relaunch, launching from menu bar / desktop icon runs the new version!
+		const targetAppImage = resolveTargetAppImage();
+		if (targetAppImage) {
+			try {
+				const targetDir = path.dirname(targetAppImage);
+				fs.accessSync(targetDir, fs.constants.W_OK);
+				const tempInDest = path.join(targetDir, `.${path.basename(targetAppImage)}.update-${Date.now()}`);
+				fs.copyFileSync(tempFilePath, tempInDest);
+				fs.chmodSync(tempInDest, 0o755);
+				fs.renameSync(tempInDest, targetAppImage);
+				fs.chmodSync(targetAppImage, 0o755);
+				console.log(`[Updater] Atomically replaced installed AppImage at ${targetAppImage}`);
+			} catch (replaceErr) {
+				console.warn('[Updater] Could not immediately replace target AppImage:', replaceErr);
+			}
+		}
 	}
 
 	pendingUpdate = {
@@ -718,9 +782,13 @@ ipcMain.handle('updater-download-install', async (_event, customUrl?: string) =>
 });
 
 ipcMain.handle('updater-relaunch', async () => {
+	const targetAppImage = resolveTargetAppImage();
+
 	if (!pendingUpdate || !fs.existsSync(pendingUpdate.filePath)) {
 		console.warn('[Updater] No downloaded update found on disk, running standard relaunch');
-		if (process.platform === 'linux' && process.env.APPIMAGE) {
+		if (process.platform === 'linux' && targetAppImage) {
+			spawn(targetAppImage, process.argv.slice(1), { detached: true, stdio: 'ignore' }).unref();
+		} else if (process.platform === 'linux' && process.env.APPIMAGE) {
 			spawn(process.env.APPIMAGE, process.argv.slice(1), { detached: true, stdio: 'ignore' }).unref();
 		} else {
 			app.relaunch();
@@ -743,32 +811,31 @@ ipcMain.handle('updater-relaunch', async () => {
 	}
 
 	if (process.platform === 'linux') {
-		if (isAppImage && process.env.APPIMAGE) {
-			const currentAppImage = process.env.APPIMAGE;
-			const currentDir = path.dirname(currentAppImage);
-			let targetExec = currentAppImage;
+		if (isAppImage) {
+			let targetExec = targetAppImage || (process.env.APPIMAGE && fs.existsSync(process.env.APPIMAGE) ? process.env.APPIMAGE : filePath);
 
-			try {
-				fs.accessSync(currentDir, fs.constants.W_OK);
-				// If filePath is on a different filesystem from currentAppImage (e.g. /tmp on tmpfs vs /home on btrfs/ext4),
-				// renameSync directly to currentAppImage throws EXDEV.
-				// Cross-filesystem copyFileSync directly onto a running executable throws ETXTBSY.
-				// However, copying to a temporary file in currentDir, and then atomic renameSync onto currentAppImage
-				// completely avoids both EXDEV and ETXTBSY!
-				if (path.dirname(filePath) !== currentDir) {
-					const tempInDest = path.join(currentDir, `.${path.basename(currentAppImage)}.update-${Date.now()}`);
-					fs.copyFileSync(filePath, tempInDest);
-					fs.chmodSync(tempInDest, 0o755);
-					fs.renameSync(tempInDest, currentAppImage);
-					fs.chmodSync(currentAppImage, 0o755);
-					try { fs.unlinkSync(filePath); } catch {}
-				} else {
-					fs.renameSync(filePath, currentAppImage);
-					fs.chmodSync(currentAppImage, 0o755);
+			if (targetAppImage) {
+				try {
+					const currentDir = path.dirname(targetAppImage);
+					fs.accessSync(currentDir, fs.constants.W_OK);
+					if (fs.existsSync(filePath) && filePath !== targetAppImage) {
+						if (path.dirname(filePath) !== currentDir) {
+							const tempInDest = path.join(currentDir, `.${path.basename(targetAppImage)}.update-${Date.now()}`);
+							fs.copyFileSync(filePath, tempInDest);
+							fs.chmodSync(tempInDest, 0o755);
+							fs.renameSync(tempInDest, targetAppImage);
+							fs.chmodSync(targetAppImage, 0o755);
+							try { fs.unlinkSync(filePath); } catch {}
+						} else {
+							fs.renameSync(filePath, targetAppImage);
+							fs.chmodSync(targetAppImage, 0o755);
+						}
+					}
+					targetExec = targetAppImage;
+				} catch (err) {
+					console.warn('[Updater] Could not replace current AppImage directly, falling back to temp file:', err);
+					targetExec = fs.existsSync(filePath) ? filePath : targetAppImage;
 				}
-			} catch (err) {
-				console.warn('[Updater] Could not replace current AppImage directly, falling back to temp file:', err);
-				targetExec = filePath;
 			}
 
 			console.log(`[Updater] Launching updated AppImage: ${targetExec}`);
@@ -818,6 +885,21 @@ ipcMain.handle('autostart-set', (_event, enable: boolean) => {
 	return setAutostart(enable);
 });
 
+ipcMain.handle('set-locale', (_event, locale: string) => {
+	if (locale && typeof locale === 'string') {
+		const normalized = normalizeLocale(locale);
+		cachedLocale = normalized;
+		savePersistedLocale(normalized);
+		updateTrayMenu(cachedLocale);
+		return true;
+	}
+	return false;
+});
+
+ipcMain.handle('get-locale', () => {
+	return cachedLocale;
+});
+
 ipcMain.handle('show-notification', (_event, { title, body }) => {
 	showNativeNotification(title, body);
 	return true;
@@ -825,6 +907,8 @@ ipcMain.handle('show-notification', (_event, { title, body }) => {
 
 // App lifecycle
 app.whenReady().then(() => {
+	cachedLocale = loadPersistedLocale();
+
 	// Strip X-Frame-Options and relax frame-ancestors in Content-Security-Policy for embedded player iframes
 	session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
 		const responseHeaders = { ...details.responseHeaders };

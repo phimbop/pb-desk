@@ -44,17 +44,6 @@
 		}
 	];
 	let activeTab = $state(1);
-	
-	let transitionClass = $state('');
-	let changingTab = $state(false);
-	$effect(() => {
-		if (changingTab) {
-			transitionClass = 'opacity-0 -translate-x-40';
-		} else {
-			transitionClass = 'opacity-100 translate-x-0';
-		}
-	});
-	// $: console.log('🚀 ~ file: MenuTrending.svelte:47 ~ changingTab:', changingTab);
 </script>
 
 <div class="w-full flex flex-col items-center justify-center delay">
@@ -72,12 +61,11 @@
 				class="menu-item-{i} {activeTab == i
 					? 'w-80'
 					: 'w-40'} h-16 relative cursor-pointer transition-all duration-200 ease-[cubic-bezier(0.6,0.6,0,1)]"
-				onclick={((e) => {
+				onclick={(e) => {
 					e.preventDefault();
-					(changingTab = !changingTab), (activeTab = item.value) ;
-				})}
+					activeTab = item.value;
+				}}
 				use:tooltip={{ text: item.label, position: 'top' }}
-				ontransitionend={() => (changingTab = false)}
 			>
 				<div
 					class="menu-item-content {activeTab == i
@@ -102,12 +90,9 @@
 			</button>
 		{/each}
 	</div>
-	<div
-		ontransitionend={() => (changingTab = false)}
-		class="w-full mt-2 transform transition-all duration-200 ease-[cubic-bezier(0.6,0.6,0,1)] {transitionClass}"
-	>
+	<div class="w-full mt-2">
 		{#each items as item}
-			{#if activeTab == item.value && changingTab == false}
+			{#if activeTab === item.value}
 				<item.component />
 			{/if}
 		{/each}
