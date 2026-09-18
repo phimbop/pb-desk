@@ -1,25 +1,57 @@
 {
-  "sessionId": "b779e12b-b32b-4060-acd9-3e56141297e7",
-  "title": "Release v0.1.12: Iframe playback fixes, Cloudflare CSP alignment, and Supabase version sync",
+  "sessionId": "1b661d08-1b69-46b9-b74f-5e07fa855bad",
+  "title": "Release v0.1.13 via GitHub Actions and sync release assets to Supabase app_versions",
   "requirements": [
     {
       "id": "R1",
-      "description": "Bump version to 0.1.12 across all Cargo crate manifests, package.json, updater service, and about page",
+      "description": "Maintain hardened application security (sandbox, updater RCE guard, TMDB token sanitation, KeyDB HTTP API migration)",
       "checks": [
-        "appimage-media-framework-tests"
+        "app-security-tests",
+        "updater-flow-tests",
+        "surreal-rust-tests"
       ]
     },
     {
       "id": "R2",
-      "description": "Verify player iframe playback fixes, CardVideoPlay permissions, and Electron onHeadersReceived support",
+      "description": "Ensure version consistency across package.json, Cargo crate manifests, updater service, and UI for v0.1.13",
       "checks": [
-        "player-issues-tests"
+        "version-consistency-tests"
+      ]
+    },
+    {
+      "id": "R3",
+      "description": "Multi-platform release workflow and Supabase app_versions synchronization readiness",
+      "checks": [
+        "version-consistency-tests",
+        "updater-flow-tests"
       ]
     }
   ],
   "checks": [
     {
-      "id": "appimage-media-framework-tests",
+      "id": "app-security-tests",
+      "command": [
+        "bun",
+        "--no-env-file",
+        "test",
+        "scripts/agent/surreal_security.test.ts"
+      ],
+      "timeoutMs": 60000,
+      "testFormat": "bun"
+    },
+    {
+      "id": "updater-flow-tests",
+      "command": [
+        "bun",
+        "--no-env-file",
+        "test",
+        "scripts/agent/desktop_updater_flow.test.ts"
+      ],
+      "timeoutMs": 60000,
+      "testFormat": "bun"
+    },
+    {
+      "id": "version-consistency-tests",
       "command": [
         "bun",
         "--no-env-file",
@@ -30,15 +62,15 @@
       "testFormat": "bun"
     },
     {
-      "id": "player-issues-tests",
+      "id": "surreal-rust-tests",
       "command": [
-        "bun",
-        "--no-env-file",
+        "cargo",
         "test",
-        "scripts/agent/player_issues.test.ts"
+        "-p",
+        "pb_service"
       ],
       "timeoutMs": 60000,
-      "testFormat": "bun"
+      "testFormat": "cargo"
     }
   ]
 }

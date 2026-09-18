@@ -70,6 +70,16 @@ async fn execute_method(state: &AppState, method: &str, params: Value) -> Result
     match method {
         "ping" => Ok(serde_json::json!("pong")),
 
+        "set_api_domain" => {
+            let domain = params
+                .get("domain")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| "Missing domain parameter".to_string())?;
+            state.movie_service.set_api_domain(domain);
+            state.auth_service.set_api_domain(domain);
+            Ok(serde_json::json!({ "success": true, "domain": domain }))
+        }
+
         "get_home_data" => {
             let data: IpcHomeData = state
                 .movie_service

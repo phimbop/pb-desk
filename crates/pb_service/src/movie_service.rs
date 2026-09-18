@@ -54,6 +54,10 @@ impl MovieService {
         self.keydb_client.ping().await
     }
 
+    pub fn set_api_domain(&self, domain: &str) {
+        self.keydb_client.set_base_url(domain);
+    }
+
     pub async fn get_adult_movies(&self) -> PbResult<Vec<AdultMovieRecord>> {
         const CACHE_KEY: &str = "surreal_adult_movies";
 

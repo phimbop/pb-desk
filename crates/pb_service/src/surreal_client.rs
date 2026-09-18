@@ -62,11 +62,16 @@ fn extract_user_id(v: &Option<serde_json::Value>) -> String {
     }
 }
 
-fn normalize_user_id(id: &str) -> String {
-    if id.starts_with("user:") {
-        id.to_string()
+pub fn sanitize_id(id: &str) -> String {
+    id.trim().chars().filter(|c| c.is_ascii_alphanumeric() || *c == '_' || *c == '-' || *c == ':').collect()
+}
+
+pub fn normalize_user_id(id: &str) -> String {
+    let clean = sanitize_id(id);
+    if clean.starts_with("user:") {
+        clean
     } else {
-        format!("user:{}", id)
+        format!("user:{}", clean)
     }
 }
 
@@ -177,13 +182,17 @@ impl SurrealClient {
 
         let user = load_env_var_or_file("SURREAL_USER")
             .or_else(|| load_env_var_or_file("DB_USER"))
-            .unwrap_or_else(|| "root".to_string());
+            .unwrap_or_default();
 
         let pass = load_env_var_or_file("SURREAL_PASS")
             .or_else(|| load_env_var_or_file("DB_PASS"))
-            .unwrap_or_else(|| "root".to_string());
+            .unwrap_or_default();
 
-        let auth = format!("Basic {}", base64_encode(&format!("{}:{}", user, pass)));
+        let auth = if !user.is_empty() && !pass.is_empty() {
+            format!("Basic {}", base64_encode(&format!("{}:{}", user, pass)))
+        } else {
+            String::new()
+        };
 
         Self {
             client,
@@ -194,16 +203,25 @@ impl SurrealClient {
         }
     }
 
+    pub fn apply_auth(&self, req: reqwest::RequestBuilder) -> reqwest::RequestBuilder {
+        if !self.auth.is_empty() {
+            req.header("Authorization", &self.auth)
+        } else {
+            req
+        }
+    }
+
     pub async fn get_adult_movies(&self) -> PbResult<Vec<AdultMovieRecord>> {
         let query = "SELECT * FROM top_movie_list WHERE is_18 = true;";
-        let resp = self
+        let mut req = self
             .client
             .post(&self.url)
             .header("surreal-ns", &self.ns)
             .header("surreal-db", &self.db)
-            .header("Authorization", &self.auth)
             .header("Accept", "application/json")
-            .body(query)
+            .body(query);
+        req = self.apply_auth(req);
+        let resp = req
             .send()
             .await
             .map_err(|e| PbError::Network(format!("SurrealDB request error: {}", e)))?;
@@ -237,12 +255,13 @@ impl SurrealClient {
         let record_ids: Vec<String> = ids
             .iter()
             .map(|id| {
-                if id.starts_with("top_movie_list:") {
-                    id.clone()
-                } else if id.chars().all(|c| c.is_ascii_digit()) {
-                    format!("top_movie_list:{}", id)
+                let clean = sanitize_id(id);
+                if clean.starts_with("top_movie_list:") {
+                    clean
+                } else if clean.chars().all(|c| c.is_ascii_digit()) {
+                    format!("top_movie_list:{}", clean)
                 } else {
-                    format!("top_movie_list:⟨{}⟩", id)
+                    format!("top_movie_list:⟨{}⟩", clean)
                 }
             })
             .collect();
@@ -252,14 +271,15 @@ impl SurrealClient {
             record_ids.join(", ")
         );
 
-        let resp = self
+        let mut req = self
             .client
             .post(&self.url)
             .header("surreal-ns", &self.ns)
             .header("surreal-db", &self.db)
-            .header("Authorization", &self.auth)
             .header("Accept", "application/json")
-            .body(query)
+            .body(query);
+        req = self.apply_auth(req);
+        let resp = req
             .send()
             .await
             .map_err(|e| PbError::Network(format!("SurrealDB request error: {}", e)))?;
@@ -301,14 +321,15 @@ impl SurrealClient {
             start_of_month_str
         );
 
-        let resp = self
+        let mut req = self
             .client
             .post(&self.url)
             .header("surreal-ns", &self.ns)
             .header("surreal-db", &self.db)
-            .header("Authorization", &self.auth)
             .header("Accept", "application/json")
-            .body(query)
+            .body(query);
+        req = self.apply_auth(req);
+        let resp = req
             .send()
             .await
             .map_err(|e| PbError::Network(format!("SurrealDB request error: {}", e)))?;
@@ -418,13 +439,14 @@ impl SurrealClient {
             "SELECT count() AS count FROM user_played_list WHERE user = type::record('{}') OR user = '{}' GROUP ALL;",
             normalized, normalized
         );
-        let resp_movies = self.client
+        let mut req_movies = self.client
             .post(&self.url)
             .header("surreal-ns", &self.ns)
             .header("surreal-db", &self.db)
-            .header("Authorization", &self.auth)
             .header("Accept", "application/json")
-            .body(query_movies)
+            .body(query_movies);
+        req_movies = self.apply_auth(req_movies);
+        let resp_movies = req_movies
             .send()
             .await
             .map_err(|e| PbError::Network(format!("SurrealDB request error: {}", e)))?;
@@ -449,13 +471,14 @@ impl SurrealClient {
             "SELECT movie_data FROM user_played_list WHERE user = type::record('{}') OR user = '{}';",
             normalized, normalized
         );
-        let resp_data = self.client
+        let mut req_data = self.client
             .post(&self.url)
             .header("surreal-ns", &self.ns)
             .header("surreal-db", &self.db)
-            .header("Authorization", &self.auth)
             .header("Accept", "application/json")
-            .body(query_data)
+            .body(query_data);
+        req_data = self.apply_auth(req_data);
+        let resp_data = req_data
             .send()
             .await
             .map_err(|e| PbError::Network(format!("SurrealDB request error: {}", e)))?;
@@ -504,13 +527,14 @@ impl SurrealClient {
             "SELECT count() AS count FROM rating WHERE user = type::record('{}') OR user = '{}' GROUP ALL;",
             normalized, normalized
         );
-        let resp_ratings = self.client
+        let mut req_ratings = self.client
             .post(&self.url)
             .header("surreal-ns", &self.ns)
             .header("surreal-db", &self.db)
-            .header("Authorization", &self.auth)
             .header("Accept", "application/json")
-            .body(query_ratings)
+            .body(query_ratings);
+        req_ratings = self.apply_auth(req_ratings);
+        let resp_ratings = req_ratings
             .send()
             .await
             .map_err(|e| PbError::Network(format!("SurrealDB request error: {}", e)))?;
@@ -680,14 +704,15 @@ impl SurrealClient {
             norm_id, norm_id
         );
 
-        let resp = self
+        let mut req = self
             .client
             .post(&self.url)
             .header("surreal-ns", &self.ns)
             .header("surreal-db", &self.db)
-            .header("Authorization", &self.auth)
             .header("Accept", "application/json")
-            .body(query)
+            .body(query);
+        req = self.apply_auth(req);
+        let resp = req
             .send()
             .await
             .map_err(|e| PbError::Network(format!("SurrealDB get_favorites network error: {}", e)))?;
@@ -728,21 +753,23 @@ impl SurrealClient {
         } else {
             return Err(PbError::InvalidArgument("Movie ID or slug missing".into()));
         };
+        let clean_movie_id = sanitize_id(&movie_id_str);
 
         let movie_json = serde_json::to_string(movie).unwrap_or_else(|_| "{}".to_string());
         let query = format!(
             "INSERT INTO user_favorites (user, movie_id, movie_data, added_at) VALUES (type::record('{}'), '{}', {}, time::now()) ON DUPLICATE KEY UPDATE movie_data = {}, added_at = time::now();",
-            norm_id, movie_id_str, movie_json, movie_json
+            norm_id, clean_movie_id, movie_json, movie_json
         );
 
-        let resp = self
+        let mut req = self
             .client
             .post(&self.url)
             .header("surreal-ns", &self.ns)
             .header("surreal-db", &self.db)
-            .header("Authorization", &self.auth)
             .header("Accept", "application/json")
-            .body(query)
+            .body(query);
+        req = self.apply_auth(req);
+        let resp = req
             .send()
             .await
             .map_err(|e| PbError::Network(format!("SurrealDB add_favorite network error: {}", e)))?;
@@ -756,19 +783,21 @@ impl SurrealClient {
 
     pub async fn remove_user_favorite(&self, user_id: &str, movie_id: &str) -> PbResult<()> {
         let norm_id = normalize_user_id(user_id);
+        let clean_movie_id = sanitize_id(movie_id);
         let query = format!(
             "DELETE FROM user_favorites WHERE (user = type::record('{}') OR user = '{}') AND movie_id = '{}';",
-            norm_id, norm_id, movie_id
+            norm_id, norm_id, clean_movie_id
         );
 
-        let resp = self
+        let mut req = self
             .client
             .post(&self.url)
             .header("surreal-ns", &self.ns)
             .header("surreal-db", &self.db)
-            .header("Authorization", &self.auth)
             .header("Accept", "application/json")
-            .body(query)
+            .body(query);
+        req = self.apply_auth(req);
+        let resp = req
             .send()
             .await
             .map_err(|e| PbError::Network(format!("SurrealDB remove_favorite network error: {}", e)))?;
@@ -787,14 +816,15 @@ impl SurrealClient {
             norm_id, norm_id
         );
 
-        let resp = self
+        let mut req = self
             .client
             .post(&self.url)
             .header("surreal-ns", &self.ns)
             .header("surreal-db", &self.db)
-            .header("Authorization", &self.auth)
             .header("Accept", "application/json")
-            .body(query)
+            .body(query);
+        req = self.apply_auth(req);
+        let resp = req
             .send()
             .await
             .map_err(|e| PbError::Network(format!("SurrealDB get_played_list network error: {}", e)))?;
@@ -841,6 +871,7 @@ impl SurrealClient {
                 .or_else(|| item.get("slug").and_then(|v| v.as_str()));
 
             if let Some(m_id) = movie_id {
+                let clean_m_id = sanitize_id(m_id);
                 let movie_data = item.get("movie_data").unwrap_or(item);
                 let played_at = item
                     .get("played_at")
@@ -870,16 +901,15 @@ impl SurrealClient {
                      ELSE IF {4} > $existing[0].updated_at THEN \
                          UPDATE user_played_list SET movie_data = {2}, played_at = {3}, updated_at = {4} WHERE (user = type::record('{0}') OR user = '{0}') AND movie_id = '{1}';\
                      END;",
-                    norm_id, m_id, movie_json, p_at_str, u_at_str
+                    norm_id, clean_m_id, movie_json, p_at_str, u_at_str
                 );
-                let _ = self.client.post(&self.url)
+                let mut req = self.client.post(&self.url)
                     .header("surreal-ns", &self.ns)
                     .header("surreal-db", &self.db)
-                    .header("Authorization", &self.auth)
                     .header("Accept", "application/json")
-                    .body(query)
-                    .send()
-                    .await;
+                    .body(query);
+                req = self.apply_auth(req);
+                let _ = req.send().await;
                 migrated_played += 1;
             }
         }
@@ -893,6 +923,7 @@ impl SurrealClient {
                 .or_else(|| item.get("slug").and_then(|v| v.as_str()));
 
             if let Some(m_id) = movie_id {
+                let clean_m_id = sanitize_id(m_id);
                 let movie_data = item.get("movie_data").unwrap_or(item);
                 let added_at = item
                     .get("added_at")
@@ -911,16 +942,15 @@ impl SurrealClient {
                      IF array::len($existing) = 0 THEN \
                          CREATE user_favorites SET user = type::record('{0}'), movie_id = '{1}', movie_data = {2}, added_at = {3};\
                      END;",
-                    norm_id, m_id, movie_json, a_at_str
+                    norm_id, clean_m_id, movie_json, a_at_str
                 );
-                let _ = self.client.post(&self.url)
+                let mut req = self.client.post(&self.url)
                     .header("surreal-ns", &self.ns)
                     .header("surreal-db", &self.db)
-                    .header("Authorization", &self.auth)
                     .header("Accept", "application/json")
-                    .body(query)
-                    .send()
-                    .await;
+                    .body(query);
+                req = self.apply_auth(req);
+                let _ = req.send().await;
                 migrated_favorites += 1;
             }
         }

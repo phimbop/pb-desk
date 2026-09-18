@@ -2,6 +2,7 @@ use crate::surreal_client::SurrealClient;
 use pb_core::error::{PbError, PbResult};
 use pb_core::models::{AuthResponse, AuthUser, ForwardRequest, ForwardResponse};
 use reqwest::{Client, Method};
+use std::sync::{Arc, RwLock};
 use std::time::Duration;
 
 const DEFAULT_REMOTE_URL: &str = "https://v3.phimbop.cfd";
@@ -9,7 +10,7 @@ const DEFAULT_REMOTE_URL: &str = "https://v3.phimbop.cfd";
 #[derive(Clone)]
 pub struct AuthService {
     client: Client,
-    base_url: String,
+    base_url: Arc<RwLock<String>>,
     surreal_client: SurrealClient,
 }
 
@@ -26,13 +27,30 @@ impl AuthService {
             .build()
             .unwrap_or_default();
 
-        let base_url = crate::surreal_client::load_env_var_or_file("REMOTE_API_URL")
-            .unwrap_or_else(|| DEFAULT_REMOTE_URL.to_string());
+        let base_url = crate::surreal_client::load_env_var_or_file("PUBLIC_WEBSITE_URL")
+            .or_else(|| crate::surreal_client::load_env_var_or_file("REMOTE_API_URL"))
+            .or_else(|| crate::surreal_client::load_env_var_or_file("API_URL"))
+            .unwrap_or_else(|| DEFAULT_REMOTE_URL.to_string())
+            .trim_end_matches('/')
+            .to_string();
 
         Self {
             client,
-            base_url,
+            base_url: Arc::new(RwLock::new(base_url)),
             surreal_client,
+        }
+    }
+
+    pub fn base_url(&self) -> String {
+        self.base_url
+            .read()
+            .map(|l| l.clone())
+            .unwrap_or_else(|_| DEFAULT_REMOTE_URL.to_string())
+    }
+
+    pub fn set_api_domain(&self, domain: &str) {
+        if let Ok(mut lock) = self.base_url.write() {
+            *lock = domain.trim_end_matches('/').to_string();
         }
     }
 
@@ -277,13 +295,14 @@ impl AuthService {
             format!("/{}", req.path)
         };
 
-        let url = format!("{}{}", self.base_url, path);
+        let base_url = self.base_url();
+        let url = format!("{}{}", base_url, path);
 
         let mut builder = self
             .client
             .request(method, &url)
-            .header("Origin", &self.base_url)
-            .header("Referer", &self.base_url)
+            .header("Origin", &base_url)
+            .header("Referer", &base_url)
             .header("Accept", "application/json");
 
         if let Some(token) = req.token.as_deref().filter(|t: &&str| !t.trim().is_empty()) {

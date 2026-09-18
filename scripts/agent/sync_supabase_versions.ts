@@ -184,7 +184,7 @@ export async function syncReleaseToSupabase(tag: string) {
 
 async function main() {
 	const tags = process.argv.slice(2);
-	const tagsToSync = tags.length > 0 ? tags : ['v0.1.1', 'v0.1.2', 'v0.1.3', 'v0.1.4', 'v0.1.5', 'v0.1.6', 'v0.1.7', 'v0.1.8', 'v0.1.9', 'v0.1.10', 'v0.1.11', 'v0.1.12'];
+	const tagsToSync = tags.length > 0 ? tags : ['v0.1.1', 'v0.1.2', 'v0.1.3', 'v0.1.4', 'v0.1.5', 'v0.1.6', 'v0.1.7', 'v0.1.8', 'v0.1.9', 'v0.1.10', 'v0.1.11', 'v0.1.12', 'v0.1.13'];
 
 	console.log(`Syncing releases to Supabase: ${tagsToSync.join(', ')}`);
 	for (const tag of tagsToSync) {

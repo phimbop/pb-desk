@@ -307,7 +307,7 @@ function createWindow() {
 			preload: path.join(appRoot, 'electron/dist/preload.cjs'),
 			contextIsolation: true,
 			nodeIntegration: false,
-			sandbox: false,
+			sandbox: true,
 			webSecurity: true
 		}
 	});
@@ -567,14 +567,56 @@ ipcMain.handle('updater-check', async () => {
 	return { updateAvailable: false, currentVersion };
 });
 
+function isTrustedUpdateUrl(urlStr: string): boolean {
+	try {
+		const parsed = new URL(urlStr);
+		if (parsed.protocol !== 'https:') {
+			return false;
+		}
+		// If it matches the latest validated check result
+		if (latestCheckResult?.url && urlStr === latestCheckResult.url) {
+			return true;
+		}
+		// Official GitHub Releases endpoint for pb-desk
+		if (
+			parsed.hostname === 'github.com' &&
+			parsed.pathname.startsWith('/phimbop/pb-desk/releases/download/')
+		) {
+			return true;
+		}
+		// GitHub release binary CDN redirect host
+		if (parsed.hostname === 'objects.githubusercontent.com') {
+			return true;
+		}
+		// Supabase project storage if hosting binaries
+		if (parsed.hostname === 'nhxgdsanykpnmghtohfz.supabase.co') {
+			return true;
+		}
+		return false;
+	} catch {
+		return false;
+	}
+}
+
 ipcMain.handle('updater-download-install', async (_event, customUrl?: string) => {
 	const downloadUrl = customUrl || latestCheckResult?.url;
 	if (!downloadUrl) {
 		throw new Error('No download URL available for update');
 	}
 
+	if (!isTrustedUpdateUrl(downloadUrl)) {
+		throw new Error(`Untrusted update download URL: ${downloadUrl}`);
+	}
+
 	const parsedUrl = new URL(downloadUrl);
 	const rawFilename = path.basename(parsedUrl.pathname) || 'update-package';
+
+	// Enforce safe filename and allowed binary extensions
+	const isValidExtension = /^[a-zA-Z0-9._-]+\.(AppImage|deb|exe|dmg|zip|tar\.gz)$/i.test(rawFilename);
+	if (!isValidExtension) {
+		throw new Error(`Invalid update file extension or name: ${rawFilename}`);
+	}
+
 	let tempFilePath: string;
 
 	if (process.platform === 'linux' && !!process.env.APPIMAGE) {

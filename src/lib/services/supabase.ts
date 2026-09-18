@@ -50,3 +50,45 @@ export async function getNewAddedMovies(): Promise<any[]> {
 		return [];
 	}
 }
+
+export async function getRemoteApiDomain(): Promise<string | null> {
+	try {
+		const client = getSupabase();
+		if (client) {
+			const { data, error } = await client
+				.from('app_configs')
+				.select('value')
+				.eq('key', 'api_domain')
+				.maybeSingle();
+
+			if (!error && data?.value && typeof data.value === 'string') {
+				const trimmed = data.value.trim().replace(/\/+$/, '');
+				if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+					return trimmed;
+				}
+			}
+		}
+
+		// Fallback: direct REST API fetch
+		const url = `${SUPABASE_URL}/rest/v1/app_configs?key=eq.api_domain&select=value`;
+		const res = await fetch(url, {
+			headers: {
+				apikey: SUPABASE_ANON_KEY,
+				Authorization: `Bearer ${SUPABASE_ANON_KEY}`
+			}
+		});
+		if (res.ok) {
+			const data = await res.json();
+			if (Array.isArray(data) && data[0]?.value && typeof data[0].value === 'string') {
+				const trimmed = data[0].value.trim().replace(/\/+$/, '');
+				if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+					return trimmed;
+				}
+			}
+		}
+	} catch (err) {
+		console.warn('[Supabase getRemoteApiDomain Error]:', err);
+	}
+	return null;
+}
+

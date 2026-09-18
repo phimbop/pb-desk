@@ -7,7 +7,7 @@
 	import UpdateModal from '$lib/Components/Modal/UpdateModal.svelte';
 	import { isPlaying } from '$lib/runes/movieStore.svelte';
 	import { deLocalizeUrl } from '$lib/paraglide/runtime';
-	import { setupGlobalOpener } from '$lib';
+	import { setupGlobalOpener, syncRemoteApiDomain } from '$lib';
 	import { isTauri } from '$lib/ipc';
 	import { onMount } from 'svelte';
 
@@ -19,6 +19,7 @@
 
 	onMount(() => {
 		setupGlobalOpener();
+		syncRemoteApiDomain();
 
 		if (isTauri()) {
 			if (typeof window !== 'undefined' && (window as any).electronAPI?.onEvent) {

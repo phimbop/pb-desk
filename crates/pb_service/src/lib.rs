@@ -227,6 +227,16 @@ mod tests {
     }
 
     #[test]
+    fn test_surreal_id_sanitization() {
+        use crate::surreal_client::{normalize_user_id, sanitize_id};
+        assert_eq!(sanitize_id("valid_id-123:abc"), "valid_id-123:abc");
+        assert_eq!(sanitize_id("'; DROP TABLE user; --"), "DROPTABLEuser--");
+        assert_eq!(normalize_user_id("admin' OR '1'='1"), "user:adminOR11");
+        assert_eq!(normalize_user_id("user:12345"), "user:12345");
+        assert_eq!(normalize_user_id("67890"), "user:67890");
+    }
+
+    #[test]
     fn test_surreal_url_normalization() {
         use crate::surreal_client::normalize_surreal_url;
         assert_eq!(

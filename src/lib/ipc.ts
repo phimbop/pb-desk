@@ -16,6 +16,7 @@ import type {
 	AppSettings,
 	MovieUpdateEvent
 } from './types';
+import { getApiUrl, websiteUrl } from './index';
 
 // Check if running inside Electron webview / desktop app
 export const isElectron = (): boolean => {
@@ -43,6 +44,22 @@ async function fallbackApi<T>(command: string, args?: Record<string, unknown>): 
 		(typeof import.meta !== 'undefined' &&
 			(import.meta.env?.PUBLIC_SURREAL_URL || import.meta.env?.VITE_SURREAL_URL)) ||
 		'https://srv2.phimbop.cfd/sql';
+
+	const getSurrealHeaders = (): Record<string, string> => {
+		const auth =
+			(typeof import.meta !== 'undefined' &&
+				(import.meta.env?.PUBLIC_SURREAL_AUTH || import.meta.env?.VITE_SURREAL_AUTH)) ||
+			'';
+		const headers: Record<string, string> = {
+			'surreal-ns': 'pb',
+			'surreal-db': 'pbdb',
+			'Accept': 'application/json'
+		};
+		if (auth) {
+			headers['Authorization'] = auth;
+		}
+		return headers;
+	};
 
 	switch (command) {
 		case 'get_home_data': {
@@ -317,12 +334,7 @@ async function fallbackApi<T>(command: string, args?: Record<string, unknown>): 
 			}
 			const res = await fetch(SURREAL_SQL_ENDPOINT, {
 				method: 'POST',
-				headers: {
-					'surreal-ns': 'pb',
-					'surreal-db': 'pbdb',
-					'Authorization': 'Basic cm9vdDpyb290',
-					'Accept': 'application/json'
-				},
+				headers: getSurrealHeaders(),
 				body: 'SELECT * FROM top_movie_list WHERE is_18 = true;'
 			}).then((r) => r.json());
 			const items = res?.[0]?.result || [];
@@ -353,12 +365,7 @@ SELECT user, count() AS count FROM user_played_list GROUP BY user;`;
 
 			const res = await fetch(SURREAL_SQL_ENDPOINT, {
 				method: 'POST',
-				headers: {
-					'surreal-ns': 'pb',
-					'surreal-db': 'pbdb',
-					'Authorization': 'Basic cm9vdDpyb290',
-					'Accept': 'application/json'
-				},
+				headers: getSurrealHeaders(),
 				body: query
 			}).then((r) => r.json());
 
@@ -437,7 +444,7 @@ SELECT user, count() AS count FROM user_played_list GROUP BY user;`;
 		case 'get_watching_list': {
 			const limit = (args?.limit as number) || 10;
 			try {
-				const res = await fetch('https://v3.phimbop.cfd/api/watching/list').then((r) => r.json());
+				const res = await fetch(getApiUrl('/api/watching/list')).then((r) => r.json());
 				if (Array.isArray(res)) {
 					return res.slice(0, limit) as T;
 				}
@@ -449,7 +456,7 @@ SELECT user, count() AS count FROM user_played_list GROUP BY user;`;
 			const req = args?.req as any;
 			if (req?.movie_id && req?.session_id) {
 				try {
-					await fetch('https://v3.phimbop.cfd/api/watching/heartbeat', {
+					await fetch(getApiUrl('/api/watching/heartbeat'), {
 						method: 'POST',
 						headers: { 'Content-Type': 'application/json' },
 						body: JSON.stringify({ movieId: req.movie_id, sessionId: req.session_id })
@@ -461,9 +468,9 @@ SELECT user, count() AS count FROM user_played_list GROUP BY user;`;
 
 		case 'auth_login': {
 			const req = args?.req as any;
-			return fetch('https://v3.phimbop.cfd/api/auth/login', {
+			return fetch(getApiUrl('/api/auth/login'), {
 				method: 'POST',
-				headers: { 'Content-Type': 'application/json', 'Origin': 'https://v3.phimbop.cfd' },
+				headers: { 'Content-Type': 'application/json', 'Origin': websiteUrl },
 				body: JSON.stringify(req)
 			}).then(async (r) => {
 				const data = await r.json();
@@ -474,9 +481,9 @@ SELECT user, count() AS count FROM user_played_list GROUP BY user;`;
 
 		case 'auth_signup': {
 			const req = args?.req as any;
-			return fetch('https://v3.phimbop.cfd/api/auth/signup', {
+			return fetch(getApiUrl('/api/auth/signup'), {
 				method: 'POST',
-				headers: { 'Content-Type': 'application/json', 'Origin': 'https://v3.phimbop.cfd' },
+				headers: { 'Content-Type': 'application/json', 'Origin': websiteUrl },
 				body: JSON.stringify(req)
 			}).then(async (r) => {
 				const data = await r.json();
@@ -487,8 +494,8 @@ SELECT user, count() AS count FROM user_played_list GROUP BY user;`;
 
 		case 'auth_get_me': {
 			const token = args?.token as string;
-			return fetch('https://v3.phimbop.cfd/api/auth/me', {
-				headers: { Cookie: `session=${token}`, Origin: 'https://v3.phimbop.cfd' }
+			return fetch(getApiUrl('/api/auth/me'), {
+				headers: { Cookie: `session=${token}`, Origin: websiteUrl }
 			}).then(async (r) => {
 				const data = await r.json();
 				return data.user as T;
@@ -497,9 +504,9 @@ SELECT user, count() AS count FROM user_played_list GROUP BY user;`;
 
 		case 'auth_logout': {
 			const token = args?.token as string;
-			return fetch('https://v3.phimbop.cfd/api/auth/logout', {
+			return fetch(getApiUrl('/api/auth/logout'), {
 				method: 'POST',
-				headers: { Cookie: `session=${token}`, Origin: 'https://v3.phimbop.cfd' }
+				headers: { Cookie: `session=${token}`, Origin: websiteUrl }
 			}).then(() => undefined as T);
 		}
 
@@ -507,14 +514,14 @@ SELECT user, count() AS count FROM user_played_list GROUP BY user;`;
 			const req = args?.req as ForwardRequest;
 			const headers: Record<string, string> = {
 				'Content-Type': 'application/json',
-				'Origin': 'https://v3.phimbop.cfd',
+				'Origin': websiteUrl,
 				'Accept': 'application/json'
 			};
 			if (req.token) {
 				headers['Cookie'] = `session=${req.token}`;
 			}
 			const path = req.path.startsWith('/') ? req.path : `/${req.path}`;
-			return fetch(`https://v3.phimbop.cfd${path}`, {
+			return fetch(getApiUrl(path), {
 				method: req.method,
 				headers,
 				body: req.body ? JSON.stringify(req.body) : undefined
@@ -531,16 +538,12 @@ SELECT user, count() AS count FROM user_played_list GROUP BY user;`;
 		}
 
 		case 'get_user_watch_stats': {
-			const userId = (args?.userId || args?.user_id) as string;
+			const rawUserId = (args?.userId || args?.user_id) as string;
+			const cleanUserId = String(rawUserId || '').replace(/[^a-zA-Z0-9_:-]/g, '');
 			return fetch(SURREAL_SQL_ENDPOINT, {
 				method: 'POST',
-				headers: {
-					'surreal-ns': 'pb',
-					'surreal-db': 'pbdb',
-					'Authorization': 'Basic cm9vdDpyb290',
-					'Accept': 'application/json'
-				},
-				body: `SELECT count() AS count FROM user_played_list WHERE user = type::record('${userId}') OR user = '${userId}' GROUP ALL;`
+				headers: getSurrealHeaders(),
+				body: `SELECT count() AS count FROM user_played_list WHERE user = type::record('${cleanUserId}') OR user = '${cleanUserId}' GROUP ALL;`
 			}).then(async (r) => {
 				const data = await r.json();
 				const count = data?.[0]?.result?.[0]?.count || 0;

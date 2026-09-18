@@ -1,9 +1,63 @@
 import type { NetworkProviderItem } from "../types/Tmdb";
 
-export const websiteUrl = 'https://v3.phimbop.cfd';
+const DEFAULT_WEBSITE_URL =
+	(typeof process !== 'undefined' && process.env?.PUBLIC_WEBSITE_URL) ||
+	'https://v3.phimbop.cfd';
+
+const getInitialWebsiteUrl = (): string => {
+	if (typeof window !== 'undefined' && window.localStorage) {
+		try {
+			const saved = window.localStorage.getItem('pb_remote_api_domain');
+			if (saved && (saved.startsWith('http://') || saved.startsWith('https://'))) {
+				return saved.replace(/\/+$/, '');
+			}
+		} catch (_) {}
+	}
+	return DEFAULT_WEBSITE_URL.replace(/\/+$/, '');
+};
+
+let currentWebsiteUrl = getInitialWebsiteUrl();
+
+export let websiteUrl = currentWebsiteUrl;
+
+export const getWebsiteUrl = (): string => {
+	return currentWebsiteUrl;
+};
+
+export const setWebsiteUrl = (newUrl: string): void => {
+	if (!newUrl || (!newUrl.startsWith('http://') && !newUrl.startsWith('https://'))) {
+		return;
+	}
+	const clean = newUrl.trim().replace(/\/+$/, '');
+	currentWebsiteUrl = clean;
+	websiteUrl = clean;
+	if (typeof window !== 'undefined' && window.localStorage) {
+		try {
+			window.localStorage.setItem('pb_remote_api_domain', clean);
+		} catch (_) {}
+	}
+	// Notify Electron / Rust sidecar if available
+	if (typeof window !== 'undefined' && (window as any).electronAPI?.invoke) {
+		(window as any).electronAPI.invoke('set_api_domain', { domain: clean }).catch(() => {});
+	}
+};
+
 export const getApiUrl = (path: string) => {
-	const base = 'https://v3.phimbop.cfd';
+	const base = getWebsiteUrl();
 	return `${base}${path.startsWith('/') ? path : `/${path}`}`;
+};
+
+export const syncRemoteApiDomain = async (): Promise<void> => {
+	try {
+		const { getRemoteApiDomain } = await import('$lib/services/supabase');
+		const remoteDomain = await getRemoteApiDomain();
+		if (remoteDomain && remoteDomain !== getWebsiteUrl()) {
+			console.log(`[RemoteConfig] Synchronized new API domain from Supabase app_configs: ${remoteDomain}`);
+			setWebsiteUrl(remoteDomain);
+		}
+	} catch (err) {
+		console.warn('[RemoteConfig] syncRemoteApiDomain failed:', err);
+	}
 };
 export const websiteTile = 'PHIMBOP - Phim gì cũng có!';
 export const neoPinkColor = 'FF1493';
@@ -53,13 +107,14 @@ export const getTmdbUrl = (path: string) => {
 };
 
 export const TMDB_READ_ACCESS_TOKEN_FALLBACK =
-	'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJhYmE4NThiZjllMmU5NTdkNDViZTc3YTIwM2I4NGYwNCIsInN1YiI6IjY0OGMyMzZiYzNjODkxMDEyZDVjYjU3ZSIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.S4fccGjfoALSIX9ra2YBljhPwCI5_8sQcdx_iQjC_gs';
+	(typeof process !== 'undefined' && process.env?.TMDB_READ_ACCESS_TOKEN) || '';
 
 export const getTmdbHeaders = (): Record<string, string> => {
 	const token =
 		(globalThis as any).TMDB_READ_ACCESS_TOKEN ||
 		(typeof process !== 'undefined' && process.env?.TMDB_READ_ACCESS_TOKEN) ||
-		TMDB_READ_ACCESS_TOKEN_FALLBACK;
+		TMDB_READ_ACCESS_TOKEN_FALLBACK ||
+		'';
 	return {
 		accept: 'application/json',
 		...(token ? { Authorization: `Bearer ${token}` } : {})
