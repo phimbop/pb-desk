@@ -1,10 +1,10 @@
 {
   "sessionId": "f32982ee-ea5f-45c1-ab49-9c5de82735f8",
-  "title": "Release v0.1.8: Electron multiplatform CI/CD and Supabase app_versions synchronization",
+  "title": "Release v0.1.9: Fix Electron black screen via custom protocol and Tauri Minisign update signing",
   "requirements": [
     {
       "id": "R1",
-      "description": "Bump version to 0.1.8 across all Cargo crate manifests, package.json, updater service, and about page",
+      "description": "Bump version to 0.1.9 across all Cargo crate manifests, package.json, updater service, and about page",
       "checks": [
         "appimage-media-framework-tests",
         "updater-tests"
@@ -12,7 +12,7 @@
     },
     {
       "id": "R2",
-      "description": "Configure multi-platform GitHub Actions release workflow for Electron build using Bun, Rust sidecar, and electron-builder",
+      "description": "Fix Electron production black screen by registering custom app:// protocol for SvelteKit static build assets and dynamically resolving isDevMode",
       "checks": [
         "ci-workflow-tests",
         "electron-migration-tests"
@@ -20,7 +20,7 @@
     },
     {
       "id": "R3",
-      "description": "Support syncing release artifacts and metadata to Supabase app_versions table",
+      "description": "Support cryptographic Minisign signing of Electron release artifacts and synchronization to Supabase app_versions table",
       "checks": [
         "updater-tests",
         "appimage-media-framework-tests"
