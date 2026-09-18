@@ -687,43 +687,15 @@ ipcMain.handle('updater-relaunch', async () => {
 		if (isAppImage && process.env.APPIMAGE) {
 			const currentAppImage = process.env.APPIMAGE;
 			const currentDir = path.dirname(currentAppImage);
-			const cleanName = path.basename(filePath).replace(/^update-\d+-/, '');
-			const newAppImagePath = path.join(currentDir, cleanName);
-			let targetExec = newAppImagePath;
+			let targetExec = currentAppImage;
 
 			try {
 				fs.accessSync(currentDir, fs.constants.W_OK);
-				fs.renameSync(filePath, newAppImagePath);
-				fs.chmodSync(newAppImagePath, 0o755);
-
-				if (currentAppImage !== newAppImagePath) {
-					try {
-						fs.unlinkSync(currentAppImage);
-					} catch (e) {
-						console.warn('[Updater] Could not unlink old AppImage:', e);
-					}
-					// Update Linux autostart desktop entry if autostart was enabled
-					if (getAutostart()) {
-						const desktopPath = getLinuxAutostartPath();
-						if (fs.existsSync(desktopPath)) {
-							const autostartContent = [
-								'[Desktop Entry]',
-								'Type=Application',
-								'Name=PHIMBOP',
-								`Exec="${newAppImagePath}" --minimized`,
-								'Icon=phimbop',
-								'Comment=PHIMBOP - Phim gì cũng có!',
-								'Terminal=false',
-								'StartupNotify=false',
-								'Categories=AudioVideo;Video;Player;',
-								'X-GNOME-Autostart-enabled=true'
-							].join('\n') + '\n';
-							fs.writeFileSync(desktopPath, autostartContent, 'utf-8');
-						}
-					}
-				}
+				// Atomically replace current AppImage so system wrappers and desktop entries continue pointing to it
+				fs.renameSync(filePath, currentAppImage);
+				fs.chmodSync(currentAppImage, 0o755);
 			} catch (err) {
-				console.warn('[Updater] Could not move AppImage to installation directory, executing from temp:', err);
+				console.warn('[Updater] Could not replace current AppImage directly, falling back to temp file:', err);
 				targetExec = filePath;
 			}
 
