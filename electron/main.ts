@@ -1,10 +1,27 @@
-import { app, BrowserWindow, ipcMain, Menu, Notification, shell, Tray } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, net, Notification, protocol, shell, Tray } from 'electron';
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as readline from 'node:readline';
+import { pathToFileURL } from 'node:url';
 
-const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+// Register custom protocol for local SPA assets before app is ready
+protocol.registerSchemesAsPrivileged([
+	{
+		scheme: 'app',
+		privileges: {
+			standard: true,
+			secure: true,
+			supportFetchAPI: true,
+			corsEnabled: true,
+			allowServiceWorkers: true
+		}
+	}
+]);
+
+function isDevMode(): boolean {
+	return !app.isPackaged && (process.env.ELECTRON_DEV === 'true' || process.argv.includes('--dev'));
+}
 const DEFAULT_SUPABASE_KEY =
 	'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeGdkc2FueWtwbm1naHRvaGZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTY1NjYzNTYsImV4cCI6MjAxMjE0MjM1Nn0._M573rGbATQfCvNRLqQHk7dCXSArLo6J_KI2M9HUBd0';
 
@@ -32,10 +49,24 @@ if (!gotTheLock) {
 	});
 }
 
+function getAppRoot(): string {
+	if (app.isPackaged) {
+		return app.getAppPath();
+	}
+	const dir = __dirname;
+	if (dir.endsWith('electron/dist') || dir.endsWith('electron/dist/')) {
+		return path.resolve(dir, '../..');
+	}
+	if (dir.endsWith('electron') || dir.endsWith('electron/')) {
+		return path.resolve(dir, '..');
+	}
+	return app.getAppPath();
+}
+
 function resolveSidecarPath(): string {
 	const binName = process.platform === 'win32' ? 'pb-sidecar.exe' : 'pb-sidecar';
 	if (!app.isPackaged) {
-		const appRoot = app.getAppPath();
+		const appRoot = getAppRoot();
 		const debugPath = path.resolve(appRoot, 'target/debug', binName);
 		if (fs.existsSync(debugPath)) return debugPath;
 		const releasePath = path.resolve(appRoot, 'target/release', binName);
@@ -149,7 +180,7 @@ function invokeSidecar<T = any>(method: string, params: Record<string, unknown> 
 }
 
 function createTray() {
-	const appRoot = app.getAppPath();
+	const appRoot = getAppRoot();
 	const iconPath = app.isPackaged
 		? path.join(process.resourcesPath, 'icons/32x32.png')
 		: path.resolve(appRoot, 'electron/icons/32x32.png');
@@ -199,7 +230,7 @@ function createTray() {
 }
 
 function createWindow() {
-	const appRoot = app.getAppPath();
+	const appRoot = getAppRoot();
 	const iconPath = app.isPackaged
 		? path.join(process.resourcesPath, 'icons/128x128.png')
 		: path.resolve(appRoot, 'electron/icons/128x128.png');
@@ -247,13 +278,13 @@ function createWindow() {
 		return { action: 'deny' };
 	});
 
-	if (isDev) {
+	if (isDevMode()) {
 		mainWindow.loadURL('http://localhost:1420').catch((err) => {
-			console.warn('[Electron] Failed to connect to http://localhost:1420, falling back to build/index.html:', err.message);
-			mainWindow?.loadFile(path.resolve(appRoot, 'build/index.html'));
+			console.warn('[Electron] Failed to connect to http://localhost:1420, falling back to app://:', err.message);
+			mainWindow?.loadURL('app://localhost/index.html');
 		});
 	} else {
-		mainWindow.loadFile(path.resolve(appRoot, 'build/index.html'));
+		mainWindow.loadURL('app://localhost/index.html');
 	}
 
 	// Hide if started with --minimized flag
@@ -345,6 +376,24 @@ ipcMain.handle('show-notification', (_event, { title, body }) => {
 
 // App lifecycle
 app.whenReady().then(() => {
+	// Intercept app:// requests to serve static files from build directory
+	protocol.handle('app', (request) => {
+		const url = new URL(request.url);
+		let pathname = decodeURIComponent(url.pathname);
+		if (pathname === '/' || pathname === '') {
+			pathname = '/index.html';
+		}
+		const appRoot = app.getAppPath();
+		const relativePath = pathname.replace(/^\/+/, '');
+		const filePath = path.join(appRoot, 'build', relativePath);
+
+		if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+			return net.fetch(pathToFileURL(filePath).toString());
+		}
+		const fallbackPath = path.join(appRoot, 'build', 'index.html');
+		return net.fetch(pathToFileURL(fallbackPath).toString());
+	});
+
 	Menu.setApplicationMenu(null);
 	startSidecar();
 	createWindow();
