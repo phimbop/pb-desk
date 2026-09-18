@@ -575,8 +575,25 @@ ipcMain.handle('updater-download-install', async (_event, customUrl?: string) =>
 
 	const parsedUrl = new URL(downloadUrl);
 	const rawFilename = path.basename(parsedUrl.pathname) || 'update-package';
-	const tempDir = app.getPath('temp');
-	const tempFilePath = path.join(tempDir, `update-${Date.now()}-${rawFilename}`);
+	let tempFilePath: string;
+
+	if (process.platform === 'linux' && !!process.env.APPIMAGE) {
+		const currentAppImage = process.env.APPIMAGE;
+		const currentDir = path.dirname(currentAppImage);
+		let canWrite = false;
+		try {
+			fs.accessSync(currentDir, fs.constants.W_OK);
+			canWrite = true;
+		} catch {}
+
+		if (canWrite) {
+			tempFilePath = path.join(currentDir, `.${path.basename(currentAppImage)}.part-${Date.now()}`);
+		} else {
+			tempFilePath = path.join(app.getPath('temp'), `update-${Date.now()}-${rawFilename}`);
+		}
+	} else {
+		tempFilePath = path.join(app.getPath('temp'), `update-${Date.now()}-${rawFilename}`);
+	}
 
 	console.log(`[Updater] Downloading update from: ${downloadUrl} to ${tempFilePath}`);
 
@@ -691,9 +708,22 @@ ipcMain.handle('updater-relaunch', async () => {
 
 			try {
 				fs.accessSync(currentDir, fs.constants.W_OK);
-				// Atomically replace current AppImage so system wrappers and desktop entries continue pointing to it
-				fs.renameSync(filePath, currentAppImage);
-				fs.chmodSync(currentAppImage, 0o755);
+				// If filePath is on a different filesystem from currentAppImage (e.g. /tmp on tmpfs vs /home on btrfs/ext4),
+				// renameSync directly to currentAppImage throws EXDEV.
+				// Cross-filesystem copyFileSync directly onto a running executable throws ETXTBSY.
+				// However, copying to a temporary file in currentDir, and then atomic renameSync onto currentAppImage
+				// completely avoids both EXDEV and ETXTBSY!
+				if (path.dirname(filePath) !== currentDir) {
+					const tempInDest = path.join(currentDir, `.${path.basename(currentAppImage)}.update-${Date.now()}`);
+					fs.copyFileSync(filePath, tempInDest);
+					fs.chmodSync(tempInDest, 0o755);
+					fs.renameSync(tempInDest, currentAppImage);
+					fs.chmodSync(currentAppImage, 0o755);
+					try { fs.unlinkSync(filePath); } catch {}
+				} else {
+					fs.renameSync(filePath, currentAppImage);
+					fs.chmodSync(currentAppImage, 0o755);
+				}
 			} catch (err) {
 				console.warn('[Updater] Could not replace current AppImage directly, falling back to temp file:', err);
 				targetExec = filePath;
@@ -712,7 +742,12 @@ ipcMain.handle('updater-relaunch', async () => {
 			const cleanName = path.basename(filePath).replace(/^update-\d+-/, '');
 			const destDeb = path.join(downloadsDir, cleanName);
 			try {
-				fs.renameSync(filePath, destDeb);
+				if (path.dirname(filePath) !== downloadsDir) {
+					fs.copyFileSync(filePath, destDeb);
+					try { fs.unlinkSync(filePath); } catch {}
+				} else {
+					fs.renameSync(filePath, destDeb);
+				}
 				await shell.openPath(destDeb);
 			} catch {
 				await shell.openPath(filePath);
@@ -755,10 +790,12 @@ app.whenReady().then(() => {
 			const lowerKey = key.toLowerCase();
 			if (lowerKey === 'x-frame-options') {
 				delete responseHeaders[key];
-			} else if (lowerKey === 'content-security-policy') {
+			} else if (lowerKey === 'content-security-policy' || lowerKey === 'content-security-policy-report-only') {
 				responseHeaders[key] = responseHeaders[key].map((csp) =>
 					csp.replace(/frame-ancestors[^;]+;?/gi, '')
 				);
+			} else if (lowerKey === 'cross-origin-resource-policy') {
+				responseHeaders[key] = ['cross-origin'];
 			}
 		}
 		callback({ cancel: false, responseHeaders });
