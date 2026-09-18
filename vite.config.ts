@@ -3,7 +3,7 @@ import { defineConfig, loadEnv } from 'vite';
 import tailwindcss from '@tailwindcss/vite';
 import { vite as vidstack } from 'vidstack/plugins';
 
-const host = process.env.TAURI_DEV_HOST;
+const host = process.env.ELECTRON_DEV_HOST || process.env.VITE_DEV_HOST;
 
 export default defineConfig(({ mode }) => {
 	const env = loadEnv(mode, process.cwd(), '');
@@ -31,7 +31,7 @@ export default defineConfig(({ mode }) => {
 					}
 				: undefined,
 			watch: {
-				ignored: ['**/src-tauri/**']
+				ignored: ['**/electron/**', '**/crates/**']
 			}
 		}
 	};

@@ -1974,3 +1974,112 @@ export const settings_seo_title = /** @type {(inputs: any) => LocalizedString} *
 export const settings_scan_hint = /** @type {(inputs: any) => LocalizedString} */ () => {
 	return /** @type {LocalizedString} */ (`Праверыць новыя фільмы зараз, не чакаючы цыкла сканавання`)
 };
+
+export const updater_app_version = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Версія праграмы`)
+};
+
+export const updater_checking = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Праверка абнаўленняў...`)
+};
+
+export const updater_check_btn = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Праверыць абнаўленні`)
+};
+
+export const updater_close = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Закрыць`)
+};
+
+export const updater_status_available = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Даступна новае абнаўленне!`)
+};
+
+export const updater_status_downloading = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Спампоўка абнаўлення...`)
+};
+
+export const updater_status_downloaded = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Абнаўленне паспяхова спампавана!`)
+};
+
+export const updater_status_up_to_date = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Усталявана апошняя версія`)
+};
+
+export const updater_status_error = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Памылка абнаўлення`)
+};
+
+export const updater_new_version = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Новая версія:`)
+};
+
+export const updater_current_version = /** @type {(inputs: any) => LocalizedString} */ (i) => {
+	return /** @type {LocalizedString} */ (`(бягучая: v${i?.version ?? ''})`)
+};
+
+export const updater_critical_badge = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Абавязковае абнаўленне:`)
+};
+
+export const updater_critical_desc = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Гэтая версія змяшчае важныя выпраўленні для стабільнасці. Абнавіце праграму, каб працягнуць.`)
+};
+
+export const updater_changelog_title = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Спіс змяненняў:`)
+};
+
+export const updater_changelog_default = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Гэты рэліз уключае паляпшэнні прадукцыйнасці і выпраўленні памылак.`)
+};
+
+export const updater_btn_later = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Пазней`)
+};
+
+export const updater_btn_update_now = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Абнавіць зараз`)
+};
+
+export const updater_downloading_pkg = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Спампоўка ўстановачнага пакета...`)
+};
+
+export const updater_downloaded_desc = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Абнаўленне спампавана і праверана. Калі ласка, перазапусціце праграму.`)
+};
+
+export const updater_btn_restart_now = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Перазапусціць зараз`)
+};
+
+export const updater_up_to_date_desc = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Вы выкарыстоўваеце апошнюю версію. На дадзены момант абнаўленняў няма.`)
+};
+
+export const updater_btn_dismiss = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Зразумела`)
+};
+
+export const updater_error_default = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Адбылася памылка пры праверцы або спампоўцы абнаўлення.`)
+};
+
+export const updater_btn_retry = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Паўтарыць`)
+};
+
+export const updater_error_check = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Не ўдалося праверыць абнаўленні.`)
+};
+
+export const updater_error_connection = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Памылка злучэння з серверам абнаўленняў.`)
+};
+
+export const updater_error_download = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Памылка спампоўкі. Паспрабуйце пазней.`)
+};
+

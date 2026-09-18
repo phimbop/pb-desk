@@ -1962,3 +1962,112 @@ export const settings_seo_title = /** @type {(inputs: any) => LocalizedString} *
 export const settings_scan_hint = /** @type {(inputs: any) => LocalizedString} */ () => {
 	return /** @type {LocalizedString} */ (`立即检查新电影，无需等待定期扫描周期`)
 };
+
+export const updater_app_version = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`应用版本`)
+};
+
+export const updater_checking = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`正在检查更新...`)
+};
+
+export const updater_check_btn = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`检查更新`)
+};
+
+export const updater_close = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`关闭`)
+};
+
+export const updater_status_available = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`发现新版本！`)
+};
+
+export const updater_status_downloading = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`正在下载更新...`)
+};
+
+export const updater_status_downloaded = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`更新下载完成！`)
+};
+
+export const updater_status_up_to_date = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`已是最新版本`)
+};
+
+export const updater_status_error = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`更新错误`)
+};
+
+export const updater_new_version = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`新版本：`)
+};
+
+export const updater_current_version = /** @type {(inputs: any) => LocalizedString} */ (i) => {
+	return /** @type {LocalizedString} */ (`(当前: v${i?.version ?? ''})`)
+};
+
+export const updater_critical_badge = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`重要更新：`)
+};
+
+export const updater_critical_desc = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`此版本包含重要修复以保持稳定运行。您需要更新后才能继续使用。`)
+};
+
+export const updater_changelog_title = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`更新日志：`)
+};
+
+export const updater_changelog_default = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`此版本包含性能优化和界面修复。`)
+};
+
+export const updater_btn_later = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`稍后再说`)
+};
+
+export const updater_btn_update_now = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`立即更新`)
+};
+
+export const updater_downloading_pkg = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`正在下载安装包...`)
+};
+
+export const updater_downloaded_desc = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`更新已下载并验证完成。请重启应用以应用新版本。`)
+};
+
+export const updater_btn_restart_now = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`立即重启`)
+};
+
+export const updater_up_to_date_desc = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`您使用的是最新版本，暂无可用更新。`)
+};
+
+export const updater_btn_dismiss = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`知道了`)
+};
+
+export const updater_error_default = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`检查或下载更新时发生错误。`)
+};
+
+export const updater_btn_retry = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`重试`)
+};
+
+export const updater_error_check = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`无法检查更新。`)
+};
+
+export const updater_error_connection = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`连接更新服务器失败。`)
+};
+
+export const updater_error_download = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`下载更新失败，请稍后重试。`)
+};
+

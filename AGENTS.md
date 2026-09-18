@@ -19,8 +19,8 @@ To ensure **ultra-fast incremental compilation**, high maintainability, and clea
 
 ### 1.1 The Zed Compilation Acceleration Strategy
 - **Fine-Grained Crates**: Divide code into small, focused, independently-compilable crates. Touching a leaf crate re-links only that crate, avoiding massive whole-project recompiles.
-- **Core Decoupled from Tauri & UI**: Pure domain logic, business rules, and state management live in crates that **never import `tauri`**. Crate tests run in fractions of a second without compiling Tauri dependencies or WebViews.
-- **Thin Tauri Adapter**: `src-tauri` acts only as a thin coordination shell for window management, capability wiring, and forwarding IPC commands to inner crates.
+- **Core Decoupled from UI**: Pure domain logic, business rules, and state management live in crates that **never import GUI libraries**. Crate tests run in fractions of a second.
+- **Rust Sidecar & Stdio JSON-RPC**: `crates/pb_sidecar` acts as the backend server communicating via stdio JSON-RPC with Electron's main process.
 - **Centralized Workspace Dependencies**: All third-party dependencies are declared in the root `[workspace.dependencies]`. Child crates inherit via `{ workspace = true }`, guaranteeing unified crate versions across the compilation graph.
 - **Fast Linker (`mold`)**: Configured in `.cargo/config.toml` using `clang` and `-fuse-ld=mold` with `split-debuginfo=unpacked` on Linux x86_64, reducing link latency by up to 10x.
 
@@ -31,20 +31,19 @@ pb-desk/
 │   └── config.toml                  # Fast linker (mold) & compiler optimizations
 ├── .codegraph/                      # CodeGraph local SQLite index (do not edit directly)
 ├── crates/                          # Zed-style modular Rust crates
-│   ├── pb_core/                     # Pure domain entities, traits, error types (NO tauri dependency)
+│   ├── pb_core/                     # Pure domain entities, traits, error types
 │   ├── pb_storage/                  # Persistence layer (SQLite, migrations, local key-value storage)
 │   ├── pb_service/                  # Business logic, background worker actors, async job processing
-│   └── pb_ipc/                      # Shared DTOs, request/response models, serialization schemas
-├── src-tauri/                       # Thin Tauri v2 Desktop Wrapper
-│   ├── capabilities/                # Granular permissions (no wildcards)
-│   ├── src/
-│   │   ├── lib.rs                   # App builder & plugin registration
-│   │   └── main.rs                  # Desktop entry point
-│   ├── tauri.conf.json              # Window config, security policy, removeUnusedCommands
-│   └── Cargo.toml                   # Crate referencing workspace crates
+│   ├── pb_ipc/                      # Shared DTOs, request/response models, serialization schemas
+│   └── pb_sidecar/                  # Rust sidecar binary executing JSON-RPC over stdio
+├── electron/                        # Electron Main Process & Preload
+│   ├── main.ts                      # Window management, Tray, Notifications, Sidecar process
+│   ├── preload.ts                   # Context-isolated secure IPC bridge
+│   └── icons/                       # Multiplatform desktop icons
 ├── src/                             # Svelte 5 / SvelteKit Frontend
 │   ├── lib/                         # Reusable UI components & stores
 │   └── routes/                      # Application routes and views
+├── electron-builder.json            # Electron packaging configuration
 ├── Cargo.toml                       # Root Cargo Workspace definition
 ├── package.json                     # Frontend dependencies & package manager scripts
 └── AGENTS.md                        # This operational specification
@@ -113,24 +112,15 @@ Never blindly grep or read raw files across the workspace. Use CodeGraph for AST
 
 ### Phase 3: Production Implementation Standards
 
-#### A. Rust Backend & Tauri v2 Architecture (`tauri` Skill)
-1. **Mandatory Tauri Skill Usage**:
-   - Always consult the `tauri` skill (`~/.gemini/config/skills/tauri/SKILL.md`) and its specialized references before modifying capabilities, IPC, runtime state, or build profiles.
-2. **Capability Boundary**:
-   - Every Tauri v2 command and plugin permission must be declared with granular scopes in `src-tauri/capabilities/default.json`.
-   - Never use wildcard permissions in production.
-3. **Non-Blocking Async**:
-   - Heavy synchronous compute or blocking filesystem I/O must run in `tauri::async_runtime::spawn_blocking`.
-   - Never block the Tokio worker thread inside an async command.
-4. **Lock & State Management**:
-   - Always drop `MutexGuard` / `RwLockGuard` before encountering `.await`. Holding locks across await points causes deadlocks and pauses execution.
-   - Do not wrap `tauri::State` in redundant `Arc`.
-5. **IPC Selection**:
-   - **JSON invoke**: For standard control commands and lightweight DTOs (< 100 KB).
-   - **Channel (`tauri::ipc::Channel`)**: For progress streaming, real-time events, and chunked updates.
-   - **Custom Asset Protocol / Binary Response**: For media, images, or large binary payloads.
-6. **Dead-Code Elimination**:
-   - Ensure `"removeUnusedCommands": true` is enabled in `src-tauri/tauri.conf.json`.
+#### A. Rust Backend & Electron Architecture
+1. **Sidecar Stdio JSON-RPC**:
+   - `crates/pb_sidecar` handles IPC commands via standard I/O JSON-RPC protocol.
+   - All commands are handled asynchronously using `JoinSet` to guarantee zero loss of in-flight requests.
+2. **Lock & State Management**:
+   - Always drop `MutexGuard` / `RwLockGuard` before encountering `.await`. Holding locks across await points causes deadlocks.
+3. **Electron Security Boundary**:
+   - Context isolation enabled (`contextIsolation: true`), node integration disabled (`nodeIntegration: false`).
+   - Granular IPC endpoints exposed via `contextBridge` in `electron/preload.ts`.
 
 #### B. Frontend Standards & Svelte MCP (`svelte` MCP)
 1. **Mandatory Svelte MCP Usage**:
@@ -207,14 +197,13 @@ Once implementation passes all verification gates:
 | **Search codebase graph** | `codegraph: codegraph_explore` | `codegraph explore "<query>"` |
 | **Symbol impact check** | `codegraph: impact` | `codegraph impact "<symbol>"` |
 | **Svelte documentation** | `svelte: get-documentation` | Svelte MCP schema |
-| **Fix Svelte runes/syntax**| `svelte: svelte-autofixer` | Svelte MCP schema |
-| **Tauri best practices** | `tauri` skill instructions | Read `~/.gemini/config/skills/tauri/SKILL.md` |
+| **Electron best practices** | Electron docs | Official Electron documentation |
 | **Library & ecosystem docs**| `context7: query-docs` | `context7: resolve-library-id` |
 | **Reference UI 1:1 Parity** | Local clone from `pbv5` | Direct copy from `/home/arch/Project/test/pbv5` |
 | **Install packages (Strictly Bun)** | Shell `bun install` | `bun install` (Never npm/pnpm/yarn) |
-| **Run scripts / dev (Strictly Bun)** | Shell `bun run` | `bun run dev` / `bun run build` |
+| **Run scripts / dev (Strictly Bun)** | Shell `bun run` | `bun run dev` / `bun run electron:dev` |
 | **Check frontend (Strictly Bun)** | Shell `bun run check` | `bun run check` (Never npx) |
-| **CLI / Tauri tools (Strictly Bunx)** | Shell `bunx` | `bunx @tauri-apps/cli <cmd>` (Never npx) |
+| **Package Electron app** | Shell `bun run pack` | `bun run pack` / `bun run dist` |
 | **Check compilation** | Shell `cargo check` | `cargo check --workspace` |
 | **Lint Rust** | Shell `cargo clippy` | `cargo clippy --workspace -- -D warnings` |
 | **Sync CodeGraph index** | Shell `codegraph sync` | `codegraph sync .` |

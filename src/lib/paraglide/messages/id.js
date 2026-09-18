@@ -1962,3 +1962,112 @@ export const settings_seo_title = /** @type {(inputs: any) => LocalizedString} *
 export const settings_scan_hint = /** @type {(inputs: any) => LocalizedString} */ () => {
 	return /** @type {LocalizedString} */ (`Periksa film baru sekarang tanpa menunggu siklus pemindaian`)
 };
+
+export const updater_app_version = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Versi aplikasi`)
+};
+
+export const updater_checking = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Memeriksa pembaruan...`)
+};
+
+export const updater_check_btn = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Periksa pembaruan`)
+};
+
+export const updater_close = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Tutup`)
+};
+
+export const updater_status_available = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Pembaruan baru tersedia!`)
+};
+
+export const updater_status_downloading = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Mengunduh pembaruan...`)
+};
+
+export const updater_status_downloaded = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Pembaruan berhasil diunduh!`)
+};
+
+export const updater_status_up_to_date = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Aplikasi sudah versi terbaru`)
+};
+
+export const updater_status_error = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Kesalahan pembaruan`)
+};
+
+export const updater_new_version = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Versi baru:`)
+};
+
+export const updater_current_version = /** @type {(inputs: any) => LocalizedString} */ (i) => {
+	return /** @type {LocalizedString} */ (`(saat ini: v${i?.version ?? ''})`)
+};
+
+export const updater_critical_badge = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Pembaruan wajib:`)
+};
+
+export const updater_critical_desc = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Versi ini berisi perbaikan penting untuk stabilitas. Anda harus memperbarui untuk melanjutkan.`)
+};
+
+export const updater_changelog_title = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Catatan rilis:`)
+};
+
+export const updater_changelog_default = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Rilis ini mencakup peningkatan kinerja dan perbaikan antarmuka.`)
+};
+
+export const updater_btn_later = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Nanti`)
+};
+
+export const updater_btn_update_now = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Perbarui sekarang`)
+};
+
+export const updater_downloading_pkg = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Mengunduh paket instalasi...`)
+};
+
+export const updater_downloaded_desc = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Pembaruan telah diunduh dan diverifikasi. Silakan mulai ulang aplikasi untuk menerapkan.`)
+};
+
+export const updater_btn_restart_now = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Mulai ulang sekarang`)
+};
+
+export const updater_up_to_date_desc = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Anda menggunakan versi terbaru. Tidak ada pembaruan saat ini.`)
+};
+
+export const updater_btn_dismiss = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Mengerti`)
+};
+
+export const updater_error_default = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Terjadi kesalahan saat memeriksa atau mengunduh pembaruan.`)
+};
+
+export const updater_btn_retry = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Coba lagi`)
+};
+
+export const updater_error_check = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Tidak dapat memeriksa pembaruan.`)
+};
+
+export const updater_error_connection = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Gagal terhubung ke server pembaruan.`)
+};
+
+export const updater_error_download = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`Gagal mengunduh pembaruan. Silakan coba lagi nanti.`)
+};
+

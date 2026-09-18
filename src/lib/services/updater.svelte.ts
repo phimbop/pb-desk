@@ -1,6 +1,7 @@
 import { isTauri, api } from '$lib/ipc';
 import { getSupabase } from '$lib/services/supabase';
 import { SUPABASE_ANON_KEY } from '$lib';
+import { m } from '$lib/paraglide/messages';
 
 export interface UpdateInfo {
 	version: string;
@@ -102,15 +103,32 @@ class UpdaterService {
 				return await this.checkViaSupabaseWeb(manual);
 			}
 
-			// Môi trường Desktop (Tauri v2)
-			const { check } = await import('@tauri-apps/plugin-updater');
+			// Môi trường Desktop (Electron)
 			const installationId = await getOrCreateInstallationId();
 			const headers: Record<string, string> = {
 				'x-installation-id': installationId,
 				apikey: SUPABASE_ANON_KEY,
 				Authorization: `Bearer ${SUPABASE_ANON_KEY}`
 			};
-			const update = await check({ headers });
+
+			let update: any = null;
+			if (typeof window !== 'undefined' && (window as any).electronAPI?.updater) {
+				const checkRes = await (window as any).electronAPI.updater.check();
+				if (checkRes && checkRes.updateAvailable) {
+					update = {
+						available: true,
+						version: checkRes.version,
+						currentVersion: checkRes.currentVersion || '0.1.7',
+						body: checkRes.notes,
+						url: checkRes.url
+					};
+				}
+			}
+
+			if (!update) {
+				// Fallback to Supabase web check if electron check returned no update
+				return await this.checkViaSupabaseWeb(manual);
+			}
 
 			if (update && update.available) {
 				this.activeUpdate = update;
@@ -167,7 +185,7 @@ class UpdaterService {
 			console.error('[Updater] Check for updates error:', err);
 			this.status = 'error';
 			const errorMsg = typeof err === 'string' ? err : err?.message || String(err || '');
-			this.error = errorMsg || 'Không thể kiểm tra bản cập nhật';
+			this.error = errorMsg || m.updater_error_check();
 			if (manual) {
 				this.modalOpen = true;
 			}
@@ -222,7 +240,7 @@ class UpdaterService {
 			}
 		} catch (e: any) {
 			this.status = 'error';
-			this.error = e?.message || 'Lỗi kết nối máy chủ cập nhật';
+			this.error = e?.message || m.updater_error_connection();
 			if (manual) this.modalOpen = true;
 			return false;
 		}
@@ -237,40 +255,19 @@ class UpdaterService {
 		}
 
 		this.status = 'downloading';
-		this.progress = 0;
+		this.progress = 50;
 		this.error = null;
 
 		try {
-			let downloaded = 0;
-			let contentLength = 0;
-
-			await this.activeUpdate.downloadAndInstall((event: any) => {
-				switch (event.event) {
-					case 'Started':
-						contentLength = event.data.contentLength || 0;
-						this.totalBytes = contentLength;
-						this.downloadedBytes = 0;
-						this.progress = 0;
-						break;
-					case 'Progress':
-						downloaded += event.data.chunkLength || 0;
-						this.downloadedBytes = downloaded;
-						if (contentLength > 0) {
-							this.progress = Math.min(100, Math.round((downloaded / contentLength) * 100));
-						}
-						break;
-					case 'Finished':
-						this.progress = 100;
-						this.status = 'downloaded';
-						break;
-				}
-			});
-
+			if (typeof window !== 'undefined' && (window as any).electronAPI?.openExternal && this.activeUpdate.url) {
+				await (window as any).electronAPI.openExternal(this.activeUpdate.url);
+			}
+			this.progress = 100;
 			this.status = 'downloaded';
 		} catch (err: any) {
 			console.error('[Updater] Download & Install failed:', err);
 			this.status = 'error';
-			this.error = err?.message || 'Tải bản cập nhật thất bại. Vui lòng thử lại sau.';
+			this.error = err?.message || m.updater_error_download();
 		}
 	}
 
@@ -278,9 +275,8 @@ class UpdaterService {
 	 * Khởi động lại ứng dụng để áp dụng bản cập nhật
 	 */
 	async relaunch(): Promise<void> {
-		if (isTauri()) {
-			const { relaunch } = await import('@tauri-apps/plugin-process');
-			await relaunch();
+		if (isTauri() && typeof window !== 'undefined' && (window as any).electronAPI?.updater?.relaunch) {
+			await (window as any).electronAPI.updater.relaunch();
 		} else {
 			window.location.reload();
 		}

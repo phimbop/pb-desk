@@ -53,7 +53,7 @@
 			</p>
 			<p class="text-xl text-slate-500">
 				{m.pageAboutUs_policy()}:{' '}
-				<a href={localizeHref("/privacy-policy")} class="text-white">Privacy policy</a>.
+				<a href={localizeHref("/privacy-policy")} class="text-white">{m.pageAboutUs_policy()}</a>.
 			</p>
 			<em class="text-sm block text-slate-600 mt-6 font-medium max-w-lg mx-auto">
 				<a
@@ -66,7 +66,7 @@
 			<!-- App Version & Update Check Card -->
 			<div class="mt-8 mx-auto max-w-md rounded-2xl border border-white/10 bg-slate-900/60 p-5 backdrop-blur-xl shadow-xl flex items-center justify-between gap-4 text-left">
 				<div>
-					<p class="text-xs text-slate-400 font-medium">Phiên bản ứng dụng</p>
+					<p class="text-xs text-slate-400 font-medium">{m.updater_app_version()}</p>
 					<div class="flex items-center gap-2 mt-0.5">
 						<span class="text-base font-bold text-white">v0.1.7</span>
 						<span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-neonPink-500/15 text-neonPink-400 border border-neonPink-500/30">
@@ -85,14 +85,14 @@
 							<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
 							<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
 						</svg>
-						<span>Đang kiểm tra...</span>
+						<span>{m.updater_checking()}</span>
 					{:else}
 						<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<path stroke="none" d="M0 0h24v24H0z" fill="none"/>
 							<path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" />
 							<path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" />
 						</svg>
-						<span>Kiểm tra cập nhật</span>
+						<span>{m.updater_check_btn()}</span>
 					{/if}
 				</button>
 			</div>

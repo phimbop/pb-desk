@@ -1962,3 +1962,112 @@ export const settings_seo_title = /** @type {(inputs: any) => LocalizedString} *
 export const settings_scan_hint = /** @type {(inputs: any) => LocalizedString} */ () => {
 	return /** @type {LocalizedString} */ (`次回のスキャンを待たずに今すぐ新着映画を確認`)
 };
+
+export const updater_app_version = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`アプリバージョン`)
+};
+
+export const updater_checking = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`更新を確認中...`)
+};
+
+export const updater_check_btn = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`更新を確認`)
+};
+
+export const updater_close = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`閉じる`)
+};
+
+export const updater_status_available = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`新しい更新があります！`)
+};
+
+export const updater_status_downloading = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`更新をダウンロード中...`)
+};
+
+export const updater_status_downloaded = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`更新のダウンロードが完了しました！`)
+};
+
+export const updater_status_up_to_date = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`最新バージョンです`)
+};
+
+export const updater_status_error = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`更新エラー`)
+};
+
+export const updater_new_version = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`新バージョン:`)
+};
+
+export const updater_current_version = /** @type {(inputs: any) => LocalizedString} */ (i) => {
+	return /** @type {LocalizedString} */ (`(現在: v${i?.version ?? ''})`)
+};
+
+export const updater_critical_badge = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`必須アップデート:`)
+};
+
+export const updater_critical_desc = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`安定性を維持するための重要な修正が含まれています。利用を続けるには更新が必要です。`)
+};
+
+export const updater_changelog_title = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`更新情報:`)
+};
+
+export const updater_changelog_default = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`パフォーマンスの改善と不具合の修正が含まれています。`)
+};
+
+export const updater_btn_later = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`後で`)
+};
+
+export const updater_btn_update_now = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`今すぐ更新`)
+};
+
+export const updater_downloading_pkg = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`インストールパッケージをダウンロード中...`)
+};
+
+export const updater_downloaded_desc = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`アップデートのダウンロードと検証が完了しました。適用するにはアプリを再起動してください。`)
+};
+
+export const updater_btn_restart_now = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`今すぐ再起動`)
+};
+
+export const updater_up_to_date_desc = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`現在最新バージョンをご利用中です。利用可能なアップデートはありません。`)
+};
+
+export const updater_btn_dismiss = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`了解`)
+};
+
+export const updater_error_default = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`更新の確認またはダウンロード中にエラーが発生しました。`)
+};
+
+export const updater_btn_retry = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`再試行`)
+};
+
+export const updater_error_check = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`更新を確認できません。`)
+};
+
+export const updater_error_connection = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`更新サーバーへの接続に失敗しました。`)
+};
+
+export const updater_error_download = /** @type {(inputs: any) => LocalizedString} */ () => {
+	return /** @type {LocalizedString} */ (`更新のダウンロードに失敗しました。後でもう一度お試しください。`)
+};
+

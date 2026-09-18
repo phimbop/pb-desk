@@ -1,60 +1,25 @@
 {
-  "sessionId": "f3d37465-36c6-4910-83f9-d297bc585af9",
-  "title": "Release v0.1.7: Sanitize opener environment in Linux AppImage and trigger adlink reliably",
+  "sessionId": "ee0f286c-92ae-4758-aae4-46246f738867",
+  "title": "Multilanguage localization for version update card and update modal",
   "requirements": [
     {
       "id": "R1",
-      "description": "Backend provides sanitized open_external_url Tauri command removing LD_LIBRARY_PATH and LD_PRELOAD in Linux AppImage environment",
+      "description": "Localize application version and update check button on About Us page (src/routes/settings/about/+page.svelte) and all dialog states in UpdateModal.svelte with Paraglide messages",
       "checks": [
-        "adlink-opener-tests"
+        "updater-tests",
+        "updater-i18n-tests"
       ]
     },
     {
       "id": "R2",
-      "description": "Frontend opener.ts invokes open_external_url with safe non-recursive fallback to ensure external adlinks open reliably",
+      "description": "Provide comprehensive translation coverage across all 17 supported locales for all updater keys in Paraglide",
       "checks": [
-        "adlink-opener-tests"
-      ]
-    },
-    {
-      "id": "R3",
-      "description": "KKPlayer reliably triggers clickAdslink on playback initiation and can-play without requiring duplicate trigger on tenPhimPage detail",
-      "checks": [
-        "adlink-opener-tests"
-      ]
-    },
-    {
-      "id": "R4",
-      "description": "Bump version to 0.1.7 across all Cargo crates, package.json, tauri.conf.json, updater service, and about page",
-      "checks": [
-        "version-consistency-tests",
-        "updater-tests"
+        "i18n-tests",
+        "updater-i18n-tests"
       ]
     }
   ],
   "checks": [
-    {
-      "id": "adlink-opener-tests",
-      "command": [
-        "bun",
-        "--no-env-file",
-        "test",
-        "scripts/agent/adlink_opener_issue.test.ts"
-      ],
-      "timeoutMs": 120000,
-      "testFormat": "bun"
-    },
-    {
-      "id": "version-consistency-tests",
-      "command": [
-        "bun",
-        "--no-env-file",
-        "test",
-        "scripts/agent/appimage_media_framework.test.ts"
-      ],
-      "timeoutMs": 120000,
-      "testFormat": "bun"
-    },
     {
       "id": "updater-tests",
       "command": [
@@ -63,7 +28,29 @@
         "test",
         "scripts/agent/updater.test.ts"
       ],
-      "timeoutMs": 120000,
+      "timeoutMs": 60000,
+      "testFormat": "bun"
+    },
+    {
+      "id": "updater-i18n-tests",
+      "command": [
+        "bun",
+        "--no-env-file",
+        "test",
+        "scripts/agent/updater_i18n.test.ts"
+      ],
+      "timeoutMs": 60000,
+      "testFormat": "bun"
+    },
+    {
+      "id": "i18n-tests",
+      "command": [
+        "bun",
+        "--no-env-file",
+        "test",
+        "scripts/agent/i18n.test.ts"
+      ],
+      "timeoutMs": 60000,
       "testFormat": "bun"
     }
   ]

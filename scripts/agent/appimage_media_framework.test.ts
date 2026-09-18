@@ -5,13 +5,15 @@ import * as path from 'node:path';
 const rootDir = path.resolve(__dirname, '../..');
 
 describe('Linux AppImage Media Framework and v0.1.7 Consistency', () => {
-	it('R1: tauri.conf.json enables bundleMediaFramework for Linux AppImage', () => {
-		const confPath = path.join(rootDir, 'src-tauri/tauri.conf.json');
+	it('R1: electron-builder.json enables AppImage for Linux and matches v0.1.7', () => {
+		const confPath = path.join(rootDir, 'electron-builder.json');
 		expect(fs.existsSync(confPath)).toBe(true);
 
 		const conf = JSON.parse(fs.readFileSync(confPath, 'utf-8'));
-		expect(conf.bundle?.linux?.appimage?.bundleMediaFramework).toBe(true);
-		expect(conf.version).toBe('0.1.7');
+		expect(conf.linux?.target).toContain('AppImage');
+
+		const pkg = JSON.parse(fs.readFileSync(path.join(rootDir, 'package.json'), 'utf-8'));
+		expect(pkg.version).toBe('0.1.7');
 	});
 
 	it('R1: release.yml installs full GStreamer codecs for Ubuntu runner', () => {
@@ -31,7 +33,7 @@ describe('Linux AppImage Media Framework and v0.1.7 Consistency', () => {
 		expect(pkg.version).toBe('0.1.7');
 
 		const cargoFiles = [
-			'src-tauri/Cargo.toml',
+			'crates/pb_sidecar/Cargo.toml',
 			'crates/pb_core/Cargo.toml',
 			'crates/pb_ipc/Cargo.toml',
 			'crates/pb_service/Cargo.toml',

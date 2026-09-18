@@ -30,7 +30,7 @@ fi
 REPO="phimbop/pb-desk"
 APP_NAME="PHIMBOP"
 BINARY_NAME="phimbop"
-DEFAULT_ICON_URL="https://raw.githubusercontent.com/${REPO}/main/src-tauri/icons/128x128.png"
+DEFAULT_ICON_URL="https://raw.githubusercontent.com/${REPO}/main/electron/icons/128x128.png"
 
 # Settings / Flags
 TARGET_VERSION="${VERSION:-}"
@@ -237,7 +237,7 @@ download_file() {
 find_local_bundle() {
     local pattern="$1"
     local found=""
-    for dir in "src-tauri/target/release/bundle" "target/release/bundle"; do
+    for dir in "dist-electron" "dist" "release" "target/release/bundle"; do
         if [ -d "$dir" ]; then
             found=$(find "$dir" -type f -name "$pattern" 2>/dev/null | head -n 1 || true)
             if [ -n "$found" ]; then
@@ -347,7 +347,7 @@ install_macos() {
             return 0
         else
             log_error "Không tìm thấy bản phát hành phù hợp trên GitHub hoặc tệp DMG cục bộ."
-            log_info "Gợi ý: Hãy tạo release trên GitHub hoặc chạy 'bun run tauri build' trong thư mục dự án."
+            log_info "Gợi ý: Hãy tạo release trên GitHub hoặc chạy 'bun run pack' trong thư mục dự án."
             exit 1
         fi
     fi
@@ -421,14 +421,14 @@ install_linux() {
     local target_ext=""
 
     if [ "$INSTALL_FORMAT" = "native" ]; then
-        if [ -f "target/release/pb-desk" ]; then
-            local_file="target/release/pb-desk"
-        elif [ -f "src-tauri/target/release/pb-desk" ]; then
-            local_file="src-tauri/target/release/pb-desk"
+        if [ -f "dist-electron/linux-unpacked/pb-desk" ]; then
+            local_file="dist-electron/linux-unpacked/pb-desk"
+        elif [ -f "target/release/pb-sidecar" ]; then
+            local_file="target/release/pb-sidecar"
         fi
         if [ -z "$local_file" ]; then
-            log_error "Không tìm thấy file build native release (target/release/pb-desk)."
-            log_info "Gợi ý: Chạy 'cargo build --release' trước khi dùng tùy chọn --native."
+            log_error "Không tìm thấy file build native release (dist-electron/linux-unpacked/pb-desk hoặc target/release/pb-sidecar)."
+            log_info "Gợi ý: Chạy 'bun run pack' trước khi dùng tùy chọn --native."
             exit 1
         fi
         log_info "Sử dụng bản build native release: $local_file"
@@ -466,12 +466,12 @@ install_linux() {
             if [ -n "$local_file" ]; then
                 INSTALL_FORMAT="appimage"
                 log_info "Tìm thấy tệp AppImage cục bộ: $local_file"
-            elif [ -f "target/release/pb-desk" ]; then
-                local_file="target/release/pb-desk"
+            elif [ -f "dist-electron/linux-unpacked/pb-desk" ]; then
+                local_file="dist-electron/linux-unpacked/pb-desk"
                 INSTALL_FORMAT="native"
                 log_info "Tìm thấy bản build native cục bộ: $local_file"
-            elif [ -f "src-tauri/target/release/pb-desk" ]; then
-                local_file="src-tauri/target/release/pb-desk"
+            elif [ -f "target/release/pb-sidecar" ]; then
+                local_file="target/release/pb-sidecar"
                 INSTALL_FORMAT="native"
                 log_info "Tìm thấy bản build native cục bộ: $local_file"
             elif [ "$DRY_RUN" = true ]; then
@@ -480,7 +480,7 @@ install_linux() {
                 return 0
             else
                 log_error "Không tìm thấy gói cài đặt ($target_ext/AppImage) từ GitHub Release hoặc thư mục local build."
-                log_info "Gợi ý: Chạy 'bun run tauri build' để đóng gói ứng dụng trước khi cài đặt offline."
+                log_info "Gợi ý: Chạy 'bun run pack' để đóng gói ứng dụng trước khi cài đặt offline."
                 exit 1
             fi
         fi
@@ -588,10 +588,10 @@ EOF
 
     # Fetch/copy app icon
     TARGET_ICON="${ICON_DIR}/${BINARY_NAME}.png"
-    if [ -f "src-tauri/icons/128x128.png" ]; then
-        cp "src-tauri/icons/128x128.png" "$TARGET_ICON"
-    elif [ -f "src-tauri/icons/32x32.png" ]; then
-        cp "src-tauri/icons/32x32.png" "$TARGET_ICON"
+    if [ -f "electron/icons/128x128.png" ]; then
+        cp "electron/icons/128x128.png" "$TARGET_ICON"
+    elif [ -f "electron/icons/32x32.png" ]; then
+        cp "electron/icons/32x32.png" "$TARGET_ICON"
     else
         curl -sSL "$DEFAULT_ICON_URL" -o "$TARGET_ICON" 2>/dev/null || true
     fi
@@ -604,8 +604,8 @@ EOF
     for size in 16x16 24x24 32x32 48x48 64x64 256x256 512x512; do
         SIZE_DIR="$HOME/.local/share/icons/hicolor/${size}/apps"
         mkdir -p "$SIZE_DIR"
-        if [ -f "src-tauri/icons/${size}.png" ]; then
-            cp "src-tauri/icons/${size}.png" "${SIZE_DIR}/${BINARY_NAME}.png" 2>/dev/null || true
+        if [ -f "electron/icons/${size}.png" ]; then
+            cp "electron/icons/${size}.png" "${SIZE_DIR}/${BINARY_NAME}.png" 2>/dev/null || true
         else
             cp "$TARGET_ICON" "${SIZE_DIR}/${BINARY_NAME}.png" 2>/dev/null || true
         fi

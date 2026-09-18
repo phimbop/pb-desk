@@ -5,24 +5,14 @@ import * as path from 'node:path';
 const rootDir = path.resolve(__dirname, '../..');
 
 describe('TMDB Iframe and KKPlayer Playback Acceptance Tests', () => {
-	it('R1: tauri.conf.json allows https: in frame-src and cdn.jsdelivr.net in script-src', () => {
-		const confPath = path.join(rootDir, 'src-tauri/tauri.conf.json');
-		expect(fs.existsSync(confPath)).toBe(true);
+	it('R1: electron/main.ts enables secure webPreferences and sets window open handler for external links', () => {
+		const mainPath = path.join(rootDir, 'electron/main.ts');
+		expect(fs.existsSync(mainPath)).toBe(true);
 
-		const conf = JSON.parse(fs.readFileSync(confPath, 'utf-8'));
-		const csp = conf.app?.security?.csp;
-		const devCsp = conf.app?.security?.devCsp;
-
-		expect(csp).toBeDefined();
-		expect(devCsp).toBeDefined();
-
-		// frame-src must allow https: for embedding video servers and following redirects
-		expect(csp).toMatch(/frame-src[^;]*https:/);
-		expect(devCsp).toMatch(/frame-src[^;]*https:/);
-
-		// script-src must allow https://cdn.jsdelivr.net as fallback for Vidstack Hls loader
-		expect(csp).toMatch(/script-src[^;]*https:\/\/cdn\.jsdelivr\.net/);
-		expect(devCsp).toMatch(/script-src[^;]*https:\/\/cdn\.jsdelivr\.net/);
+		const mainContent = fs.readFileSync(mainPath, 'utf-8');
+		expect(mainContent).toContain('webSecurity: true');
+		expect(mainContent).toContain('setWindowOpenHandler');
+		expect(mainContent).toContain('shell.openExternal');
 	});
 
 	it('R2: CardVideoPlay.svelte prioritizes active working embed servers', () => {

@@ -5,31 +5,14 @@ import * as path from 'node:path';
 const rootDir = path.resolve(__dirname, '../..');
 
 describe('Production Media Streaming and TMDB Acceptance Tests', () => {
-	it('R1: tauri.conf.json configures connect-src to allow HTTPS media and CDN connections', () => {
-		const confPath = path.join(rootDir, 'src-tauri/tauri.conf.json');
-		expect(fs.existsSync(confPath)).toBe(true);
+	it('R1: vite.config.ts defines required Supabase and TMDB environment definitions for desktop build', () => {
+		const vitePath = path.join(rootDir, 'vite.config.ts');
+		expect(fs.existsSync(vitePath)).toBe(true);
 
-		const conf = JSON.parse(fs.readFileSync(confPath, 'utf-8'));
-		const csp = conf.app?.security?.csp;
-		const devCsp = conf.app?.security?.devCsp;
-
-		expect(csp).toBeDefined();
-		expect(devCsp).toBeDefined();
-
-		// connect-src must allow https: for HLS.js streaming from CDNs
-		const cspConnectMatch = csp.match(/connect-src\s+([^;]+)/);
-		expect(cspConnectMatch).not.toBeNull();
-		const cspConnectDirectives = cspConnectMatch[1].split(/\s+/);
-
-		// Must allow https: or BunnyCDN
-		const hasHttpsOrCdn =
-			cspConnectDirectives.includes('https:') ||
-			cspConnectDirectives.some((d: string) => d.includes('b-cdn.net'));
-		expect(hasHttpsOrCdn).toBe(true);
-
-		// Ensure required API endpoints are still preserved
-		expect(csp).toContain('https://phimapi.com');
-		expect(csp).toContain('https://api.themoviedb.org');
+		const content = fs.readFileSync(vitePath, 'utf-8');
+		expect(content).toContain('TMDB_READ_ACCESS_TOKEN');
+		expect(content).toContain('SUPABASE_URL');
+		expect(content).toContain('SUPABASE_ANON_KEY');
 	});
 
 	it('R2: GitHub Actions release workflow provides TMDB and Supabase credentials during build', () => {

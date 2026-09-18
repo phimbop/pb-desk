@@ -5,7 +5,7 @@ members = [
     "crates/pb_storage",
     "crates/pb_service",
     "crates/pb_ipc",
-    "src-tauri",
+    "crates/pb_sidecar",
 ]
 
 [workspace.dependencies]
@@ -17,21 +17,16 @@ anyhow = "1.0"
 rusqlite = { version = "0.33", features = ["bundled"] }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 chrono = { version = "0.4", features = ["serde"] }
-tauri = { version = "2.3", features = ["tray-icon"] }
-tauri-build = { version = "2.0" }
-tauri-plugin-opener = "2.2"
-tauri-plugin-autostart = "2"
-tauri-plugin-notification = "2"
-tauri-plugin-updater = "2"
-tauri-plugin-process = "2"
 redis = { version = "1.7.0", default-features = false, features = ["tokio-comp", "aio"] }
 uuid = { version = "1", features = ["v4"] }
+tempfile = "3"
 
 # Internal Workspace Crates
 pb_core = { path = "crates/pb_core" }
 pb_storage = { path = "crates/pb_storage" }
 pb_service = { path = "crates/pb_service" }
 pb_ipc = { path = "crates/pb_ipc" }
+pb_sidecar = { path = "crates/pb_sidecar" }
 
 [profile.dev]
 incremental = true

@@ -1,0 +1,23 @@
+[package]
+name = "pb_sidecar"
+version = "0.1.7"
+edition = "2021"
+
+[[bin]]
+name = "pb-sidecar"
+path = "src/main.rs"
+
+[dependencies]
+pb_core = { workspace = true }
+pb_storage = { workspace = true }
+pb_service = { workspace = true }
+pb_ipc = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }

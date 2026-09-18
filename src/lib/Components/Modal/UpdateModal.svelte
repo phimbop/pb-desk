@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages';
 	import { updater } from '$lib/services/updater.svelte';
 	import { fade, scale } from 'svelte/transition';
 
@@ -31,7 +32,7 @@
 			<!-- Close Button (chỉ hiển thị khi không phải critical) -->
 			{#if !updater.updateInfo?.isCritical && updater.status !== 'downloading'}
 				<button
-					aria-label="Đóng"
+					aria-label={m.updater_close()}
 					onclick={() => updater.closeModal()}
 					class="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-full hover:bg-white/10 transition-colors"
 				>
@@ -87,23 +88,23 @@
 				<div>
 					<h3 class="text-lg font-bold text-white tracking-tight">
 						{#if updater.status === 'available'}
-							Có bản cập nhật mới!
+							{m.updater_status_available()}
 						{:else if updater.status === 'downloading'}
-							Đang tải bản cập nhật...
+							{m.updater_status_downloading()}
 						{:else if updater.status === 'downloaded'}
-							Đã tải xong bản cập nhật!
+							{m.updater_status_downloaded()}
 						{:else if updater.status === 'up-to-date'}
-							Ứng dụng đã là bản mới nhất
+							{m.updater_status_up_to_date()}
 						{:else if updater.status === 'error'}
-							Lỗi cập nhật
+							{m.updater_status_error()}
 						{:else}
-							Kiểm tra cập nhật
+							{m.updater_check_btn()}
 						{/if}
 					</h3>
 					<p class="text-xs text-slate-400">
 						{#if updater.updateInfo}
-							Phiên bản mới: <span class="font-semibold text-neonPink-400">v{updater.updateInfo.version}</span>
-							(hiện tại: v{updater.updateInfo.currentVersion})
+							{m.updater_new_version()} <span class="font-semibold text-neonPink-400">v{updater.updateInfo.version}</span>
+							{m.updater_current_version({ version: updater.updateInfo.currentVersion })}
 						{:else}
 							PHIMBOP Desktop
 						{/if}
@@ -122,16 +123,16 @@
 							<line x1="12" y1="16" x2="12.01" y2="16"></line>
 						</svg>
 						<div>
-							<span class="font-bold">Bản cập nhật bắt buộc:</span> Phiên bản này chứa các sửa lỗi quan trọng để duy trì hoạt động ổn định. Bạn cần cập nhật để tiếp tục sử dụng.
+							<span class="font-bold">{m.updater_critical_badge()}</span> {m.updater_critical_desc()}
 						</div>
 					</div>
 				{/if}
 
 				<!-- Changelog -->
 				<div class="mb-6 rounded-2xl border border-white/5 bg-black/40 p-4">
-					<p class="mb-2 text-xs font-semibold text-slate-300 uppercase tracking-wider">Thông tin cập nhật:</p>
+					<p class="mb-2 text-xs font-semibold text-slate-300 uppercase tracking-wider">{m.updater_changelog_title()}</p>
 					<div class="max-h-48 overflow-y-auto text-xs text-slate-300 space-y-1 pr-2 whitespace-pre-wrap leading-relaxed">
-						{updater.updateInfo?.releaseNotes || 'Bản phát hành bao gồm các cải tiến hiệu năng và sửa lỗi giao diện.'}
+						{updater.updateInfo?.releaseNotes || m.updater_changelog_default()}
 					</div>
 				</div>
 
@@ -143,7 +144,7 @@
 							onclick={() => updater.closeModal()}
 							class="px-5 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all"
 						>
-							Để sau
+							{m.updater_btn_later()}
 						</button>
 					{/if}
 					<button
@@ -156,7 +157,7 @@
 							<polyline points="7 10 12 15 17 10"></polyline>
 							<line x1="12" y1="15" x2="12" y2="3"></line>
 						</svg>
-						<span>Cập nhật ngay</span>
+						<span>{m.updater_btn_update_now()}</span>
 					</button>
 				</div>
 
@@ -164,7 +165,7 @@
 				<!-- Progress Bar -->
 				<div class="space-y-4 my-6">
 					<div class="flex justify-between text-xs text-slate-400">
-						<span>Đang tải gói cài đặt...</span>
+						<span>{m.updater_downloading_pkg()}</span>
 						<span class="font-bold text-white">{updater.progress}%</span>
 					</div>
 					<div class="w-full h-3 rounded-full bg-neutral-800 overflow-hidden border border-white/5">
@@ -182,7 +183,7 @@
 
 			{:else if updater.status === 'downloaded'}
 				<div class="my-6 text-sm text-slate-300">
-					Bản cập nhật đã được tải về và xác thực thành công. Vui lòng khởi động lại ứng dụng để áp dụng bản mới.
+					{m.updater_downloaded_desc()}
 				</div>
 				<div class="flex justify-end gap-3">
 					<button
@@ -195,13 +196,13 @@
 							<path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" />
 							<path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" />
 						</svg>
-						<span>Khởi động lại ngay</span>
+						<span>{m.updater_btn_restart_now()}</span>
 					</button>
 				</div>
 
 			{:else if updater.status === 'up-to-date'}
 				<div class="my-6 text-sm text-slate-300 leading-relaxed">
-					Bạn đang sử dụng phiên bản mới nhất. Không có bản cập nhật nào tại thời điểm này.
+					{m.updater_up_to_date_desc()}
 				</div>
 				<div class="flex justify-end">
 					<button
@@ -209,13 +210,13 @@
 						onclick={() => updater.closeModal()}
 						class="px-5 py-2.5 rounded-xl text-xs font-semibold text-white bg-white/10 hover:bg-white/15 transition-all"
 					>
-						Đã hiểu
+						{m.updater_btn_dismiss()}
 					</button>
 				</div>
 
 			{:else if updater.status === 'error'}
 				<div class="my-6 rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4 text-xs text-rose-300">
-					{updater.error || 'Có lỗi xảy ra trong quá trình kiểm tra hoặc tải bản cập nhật.'}
+					{updater.error || m.updater_error_default()}
 				</div>
 				<div class="flex justify-end gap-3">
 					<button
@@ -223,14 +224,14 @@
 						onclick={() => updater.checkForUpdates(true)}
 						class="px-5 py-2.5 rounded-xl text-xs font-semibold text-white bg-white/10 hover:bg-white/15 transition-all"
 					>
-						Thử lại
+						{m.updater_btn_retry()}
 					</button>
 					<button
 						type="button"
 						onclick={() => updater.closeModal()}
 						class="px-5 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:text-white"
 					>
-						Đóng
+						{m.updater_close()}
 					</button>
 				</div>
 			{/if}

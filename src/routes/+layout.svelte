@@ -21,11 +21,11 @@
 		setupGlobalOpener();
 
 		if (isTauri()) {
-			import('@tauri-apps/api/event').then(({ listen }) => {
-				listen('movie-update', (event: any) => {
-					console.log('[Notification Event Received]:', event.payload);
+			if (typeof window !== 'undefined' && (window as any).electronAPI?.onEvent) {
+				(window as any).electronAPI.onEvent('movie-update', (event: any) => {
+					console.log('[Notification Event Received]:', event);
 				});
-			});
+			}
 
 			// Tự động kiểm tra bản cập nhật mới trong nền sau khi mở ứng dụng 3 giây
 			setTimeout(() => {

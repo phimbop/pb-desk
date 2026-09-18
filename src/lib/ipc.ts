@@ -17,16 +17,20 @@ import type {
 	MovieUpdateEvent
 } from './types';
 
-// Check if running inside Tauri webview
+// Check if running inside Electron webview / desktop app
+export const isElectron = (): boolean => {
+	return typeof window !== 'undefined' && ('electronAPI' in window || (window as any).electronAPI != null);
+};
+
+// Kept for backward compatibility with existing components
 export const isTauri = (): boolean => {
-	return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+	return isElectron();
 };
 
 // Safe invoke helper with fallback for web browser preview
 async function safeInvoke<T>(command: string, args?: Record<string, unknown>): Promise<T> {
-	if (isTauri()) {
-		const { invoke } = await import('@tauri-apps/api/core');
-		return await invoke<T>(command, args);
+	if (isElectron()) {
+		return await (window as any).electronAPI.invoke(command, args);
 	}
 
 	// Fallback to direct HTTP fetch for dev browser preview
@@ -630,12 +634,13 @@ export const api = {
 };
 
 export async function enableAutostart(): Promise<boolean> {
-	if (isTauri()) {
+	if (isElectron()) {
 		try {
-			const { enable, isEnabled } = await import('@tauri-apps/plugin-autostart');
-			if (!(await isEnabled())) {
-				await enable();
+			if (typeof window !== 'undefined' && (window as any).electronAPI?.autostart?.set) {
+				await (window as any).electronAPI.autostart.set(true);
 			}
+			const current = await api.getAppSettings();
+			await api.saveAppSettings({ ...current, autostart: true });
 			return true;
 		} catch (e) {
 			console.warn('[Autostart] enable failed:', e);
@@ -646,12 +651,13 @@ export async function enableAutostart(): Promise<boolean> {
 }
 
 export async function disableAutostart(): Promise<boolean> {
-	if (isTauri()) {
+	if (isElectron()) {
 		try {
-			const { disable, isEnabled } = await import('@tauri-apps/plugin-autostart');
-			if (await isEnabled()) {
-				await disable();
+			if (typeof window !== 'undefined' && (window as any).electronAPI?.autostart?.set) {
+				await (window as any).electronAPI.autostart.set(false);
 			}
+			const current = await api.getAppSettings();
+			await api.saveAppSettings({ ...current, autostart: false });
 			return true;
 		} catch (e) {
 			console.warn('[Autostart] disable failed:', e);
@@ -662,10 +668,14 @@ export async function disableAutostart(): Promise<boolean> {
 }
 
 export async function checkAutostartEnabled(): Promise<boolean> {
-	if (isTauri()) {
+	if (isElectron()) {
 		try {
-			const { isEnabled } = await import('@tauri-apps/plugin-autostart');
-			return await isEnabled();
+			if (typeof window !== 'undefined' && (window as any).electronAPI?.autostart?.get) {
+				const enabled = await (window as any).electronAPI.autostart.get();
+				if (typeof enabled === 'boolean') return enabled;
+			}
+			const settings = await api.getAppSettings();
+			return Boolean(settings.autostart);
 		} catch {
 			return false;
 		}

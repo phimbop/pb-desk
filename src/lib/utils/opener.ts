@@ -1,40 +1,33 @@
-import { invoke, isTauri as isTauriCore } from '@tauri-apps/api/core';
-import { openUrl } from '@tauri-apps/plugin-opener';
-
 let originalWindowOpen: typeof window.open | null = null;
 if (typeof window !== 'undefined') {
 	originalWindowOpen = window.open;
 }
 
 /**
- * Checks whether the app is currently running inside the Tauri desktop webview.
+ * Checks whether the app is currently running inside the Electron/desktop webview.
  */
 export const isTauriEnv = (): boolean => {
 	if (typeof window === 'undefined') return false;
-	return '__TAURI_INTERNALS__' in window || '__TAURI__' in window || isTauriCore();
+	return 'electronAPI' in window || (window as any).electronAPI != null;
 };
+export const isElectronEnv = isTauriEnv;
 
 /**
  * Opens an external URL in the system's default web browser.
- * Uses sanitized Tauri command `open_external_url` when running in desktop AppImage/Tauri,
- * falling back to `@tauri-apps/plugin-opener` and `originalWindowOpen` in browsers.
+ * Uses Electron `openExternal` when running in desktop app,
+ * falling back to `originalWindowOpen` in browsers.
  */
 export async function openExternalUrl(url: string | URL): Promise<void> {
 	if (!url) return;
 	const targetUrl = url.toString();
 	if (isTauriEnv()) {
 		try {
-			// Prioritize sanitized backend command which clears LD_LIBRARY_PATH & LD_PRELOAD in Linux AppImage
-			await invoke('open_external_url', { url: targetUrl });
-			return;
-		} catch (invokeErr) {
-			console.warn('[Opener] invoke(open_external_url) failed, trying openUrl fallback:', invokeErr);
-			try {
-				await openUrl(targetUrl);
+			if ((window as any).electronAPI?.openExternal) {
+				await (window as any).electronAPI.openExternal(targetUrl);
 				return;
-			} catch (openerErr) {
-				console.warn('[Opener] openUrl fallback failed:', openerErr);
 			}
+		} catch (invokeErr) {
+			console.warn('[Opener] electronAPI.openExternal failed:', invokeErr);
 		}
 	}
 

@@ -120,46 +120,17 @@ describe('Supabase & Tauri v2 Updater Integration Tests', () => {
 		expect(typeof bucket2).toBe('number');
 	});
 
-	it('R2: Tauri Backend Cargo configuration includes updater and process plugins', () => {
-		const rootCargoPath = path.join(rootDir, 'Cargo.toml');
-		const srcCargoPath = path.join(rootDir, 'src-tauri/Cargo.toml');
+	it('R2: Electron Main Process registers updater IPC handlers with Supabase headers', () => {
+		const mainPath = path.join(rootDir, 'electron/main.ts');
+		expect(fs.existsSync(mainPath)).toBe(true);
 
-		const rootCargo = fs.readFileSync(rootCargoPath, 'utf-8');
-		const srcCargo = fs.readFileSync(srcCargoPath, 'utf-8');
-
-		expect(rootCargo).toContain('tauri-plugin-updater');
-		expect(rootCargo).toContain('tauri-plugin-process');
-
-		expect(srcCargo).toContain('tauri-plugin-updater = { workspace = true }');
-		expect(srcCargo).toContain('tauri-plugin-process = { workspace = true }');
-	});
-
-	it('R2: Tauri Builder registers updater and process plugins in lib.rs', () => {
-		const libRsPath = path.join(rootDir, 'src-tauri/src/lib.rs');
-		const libRs = fs.readFileSync(libRsPath, 'utf-8');
-
-		expect(libRs).toContain('tauri_plugin_updater::Builder::new()');
-		expect(libRs).toContain('header("apikey"');
-		expect(libRs).toContain('header("Authorization"');
-		expect(libRs).toContain('tauri_plugin_process::init()');
-	});
-
-	it('R2: Tauri capabilities and tauri.conf.json declare updater permissions, endpoints and removeUnusedCommands', () => {
-		const capPath = path.join(rootDir, 'src-tauri/capabilities/default.json');
-		const confPath = path.join(rootDir, 'src-tauri/tauri.conf.json');
-
-		const cap = JSON.parse(fs.readFileSync(capPath, 'utf-8'));
-		expect(cap.permissions).toContain('updater:default');
-		expect(cap.permissions).toContain('process:default');
-
-		const conf = JSON.parse(fs.readFileSync(confPath, 'utf-8'));
-		expect(conf.plugins?.updater).toBeDefined();
-		expect(conf.plugins.updater.endpoints).toBeDefined();
-		expect(conf.plugins.updater.endpoints.length).toBeGreaterThan(0);
-		expect(conf.plugins.updater.endpoints[0]).toContain('supabase.co');
-		expect(conf.plugins.updater.pubkey).toBeDefined();
-		expect(conf.build?.removeUnusedCommands).toBe(true);
-		expect(conf.bundle?.createUpdaterArtifacts).toBe(true);
+		const mainContent = fs.readFileSync(mainPath, 'utf-8');
+		expect(mainContent).toContain('updater-check');
+		expect(mainContent).toContain('updater-relaunch');
+		expect(mainContent).toContain('apikey');
+		expect(mainContent).toContain('Authorization');
+		expect(mainContent).toContain('app-update?target=');
+		expect(mainContent).toContain('arch=');
 	});
 
 	it('R3: Frontend UpdaterService exists with reactive runes, persistent installation_id, and Supabase auth headers', () => {
@@ -205,7 +176,7 @@ describe('Supabase & Tauri v2 Updater Integration Tests', () => {
 		const modalCode = fs.readFileSync(modalPath, 'utf-8');
 		expect(modalCode).toContain('updater.modalOpen');
 		expect(modalCode).toContain('updater.status');
-		expect(modalCode).toContain('Cập nhật ngay');
+		expect(modalCode.includes('updater_btn_update_now') || modalCode.includes('Cập nhật ngay')).toBe(true);
 		expect(modalCode).toContain('isCritical');
 
 		const layoutPath = path.join(rootDir, 'src/routes/+layout.svelte');
@@ -220,7 +191,7 @@ describe('Supabase & Tauri v2 Updater Integration Tests', () => {
 		const aboutCode = fs.readFileSync(aboutPath, 'utf-8');
 
 		expect(aboutCode).toContain('updater.checkForUpdates(true)');
-		expect(aboutCode).toContain('Kiểm tra cập nhật');
+		expect(aboutCode.includes('updater_check_btn') || aboutCode.includes('Kiểm tra cập nhật')).toBe(true);
 		expect(aboutCode).toMatch(/v0\.1\.\d+/);
 	});
 
@@ -236,9 +207,9 @@ describe('Supabase & Tauri v2 Updater Integration Tests', () => {
 		expect(code).toContain('.in("target", Array.from(candidateTargets))');
 	});
 
-	it('R3: tauri.conf.json updater endpoint includes arch parameter', () => {
-		const confPath = path.join(rootDir, 'src-tauri/tauri.conf.json');
-		const conf = JSON.parse(fs.readFileSync(confPath, 'utf-8'));
-		expect(conf.plugins.updater.endpoints[0]).toContain('arch={{arch}}');
+	it('R3: electron/main.ts updater endpoint includes arch parameter', () => {
+		const mainPath = path.join(rootDir, 'electron/main.ts');
+		const code = fs.readFileSync(mainPath, 'utf-8');
+		expect(code).toContain('arch=${arch}');
 	});
 });

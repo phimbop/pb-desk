@@ -5,7 +5,7 @@ import { spawnSync } from "node:child_process";
 
 const root = resolve(import.meta.dir, "../..");
 const workflowPath = resolve(root, ".github/workflows/release.yml");
-const tauriConfigPath = resolve(root, "src-tauri/tauri.conf.json");
+const electronBuilderConfigPath = resolve(root, "electron-builder.json");
 
 describe("GitHub Actions Multi-Platform CI/CD Workflow", () => {
   test("workflow file exists", () => {
@@ -67,15 +67,13 @@ describe("GitHub Actions Multi-Platform CI/CD Workflow", () => {
     expect(content).toContain("actions/upload-artifact");
   });
 
-  test("tauri.conf.json is configured to produce all popular user formats", () => {
-    expect(existsSync(tauriConfigPath)).toBe(true);
-    const config = JSON.parse(readFileSync(tauriConfigPath, "utf-8"));
-    expect(config.bundle).toBeDefined();
-    expect(config.bundle.active).toBe(true);
-    expect(config.bundle.targets).toBe("all");
-    expect(config.bundle.category).toBe("Entertainment");
-    expect(config.bundle.shortDescription).toBeTruthy();
-    expect(config.bundle.longDescription).toBeTruthy();
+  test("electron-builder.json is configured to produce all popular user formats", () => {
+    expect(existsSync(electronBuilderConfigPath)).toBe(true);
+    const config = JSON.parse(readFileSync(electronBuilderConfigPath, "utf-8"));
+    expect(config.linux?.target).toContain("AppImage");
+    expect(config.mac?.target).toContain("dmg");
+    expect(config.win?.target).toContain("nsis");
+    expect(config.productName).toBe("PHIMBOP");
   });
 
   test("release description lists popular user-facing formats", () => {

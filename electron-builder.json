@@ -1,0 +1,41 @@
+{
+  "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
+  "appId": "com.phimbop.desktop",
+  "productName": "PHIMBOP",
+  "copyright": "Copyright © 2026 PHIMBOP",
+  "directories": {
+    "output": "dist-electron"
+  },
+  "files": [
+    "build/**/*",
+    "electron/dist/**/*",
+    "electron/icons/**/*",
+    "package.json"
+  ],
+  "extraResources": [
+    {
+      "from": "target/release/pb-sidecar",
+      "to": "bin/pb-sidecar"
+    },
+    {
+      "from": "electron/icons",
+      "to": "icons"
+    }
+  ],
+  "linux": {
+    "target": ["AppImage", "deb"],
+    "category": "Video",
+    "icon": "electron/icons/128x128.png",
+    "synopsis": "PHIMBOP Desktop - Phim gì cũng có",
+    "description": "PHIMBOP Desktop - Ứng dụng xem phim đa nền tảng cho Windows, macOS và Linux."
+  },
+  "mac": {
+    "target": ["dmg", "zip"],
+    "category": "public.app-category.entertainment",
+    "icon": "electron/icons/icon.icns"
+  },
+  "win": {
+    "target": ["nsis", "portable"],
+    "icon": "electron/icons/icon.ico"
+  }
+}

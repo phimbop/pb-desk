@@ -42,23 +42,22 @@ describe('Adlink and External Opener in Linux AppImage Environment', () => {
 		expect(cleanRun.stdout.trim()).toBe('OK');
 	});
 
-	it('Backend provides sanitized open_external_url command in src-tauri', () => {
-		const libRsPath = path.join(rootDir, 'src-tauri/src/lib.rs');
-		const content = fs.readFileSync(libRsPath, 'utf-8');
+	it('Backend provides sanitized open_external_url / openExternal in electron', () => {
+		const mainPath = path.join(rootDir, 'electron/main.ts');
+		const content = fs.readFileSync(mainPath, 'utf-8');
 
-		// Rust backend must define open_external_url and unpollute LD_LIBRARY_PATH
+		// Electron backend must define open_external_url and open-external-url
 		expect(content).toContain('open_external_url');
-		expect(content).toContain('env_remove("LD_LIBRARY_PATH")');
-		expect(content).toContain('env_remove("LD_PRELOAD")');
+		expect(content).toContain('open-external-url');
+		expect(content).toContain('shell.openExternal');
 	});
 
-	it('Frontend opener.ts invokes sanitized backend opener and avoids infinite recursion', () => {
+	it('Frontend opener.ts invokes desktop opener and avoids infinite recursion', () => {
 		const openerPath = path.join(rootDir, 'src/lib/utils/opener.ts');
 		const content = fs.readFileSync(openerPath, 'utf-8');
 
-		// Must invoke open_external_url via Tauri IPC
-		expect(content).toContain('open_external_url');
-		expect(content).toContain('invoke(');
+		// Must invoke openExternal via Electron API
+		expect(content).toContain('openExternal');
 	});
 
 	it('Adlink triggers correctly on TMDB Play and KKPlayer (while KKPhim detail delegates to KKPlayer)', () => {
