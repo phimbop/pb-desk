@@ -24,6 +24,7 @@
   ],
   "linux": {
     "target": ["AppImage", "deb"],
+    "maintainer": "phimbop <phimbop@duck.com>",
     "category": "Video",
     "icon": "electron/icons/128x128.png",
     "synopsis": "PHIMBOP Desktop - Phim gì cũng có",
