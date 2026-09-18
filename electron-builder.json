@@ -42,10 +42,6 @@
       {
         "from": "target/release/pb-sidecar.exe",
         "to": "bin/pb-sidecar.exe"
-      },
-      {
-        "from": "electron/icons",
-        "to": "icons"
       }
     ]
   }
