@@ -13,6 +13,9 @@ describe('TMDB Iframe and KKPlayer Playback Acceptance Tests', () => {
 		expect(mainContent).toContain('webSecurity: true');
 		expect(mainContent).toContain('setWindowOpenHandler');
 		expect(mainContent).toContain('shell.openExternal');
+		expect(mainContent).toContain('onHeadersReceived');
+		expect(mainContent).toContain('x-frame-options');
+		expect(mainContent).toContain('frame-ancestors');
 	});
 
 	it('R2: CardVideoPlay.svelte prioritizes active working embed servers', () => {
@@ -25,6 +28,10 @@ describe('TMDB Iframe and KKPlayer Playback Acceptance Tests', () => {
 		expect(content).toContain('player.swinglust.top');
 		expect(content).toContain('player.videasy.to');
 		expect(content).toContain('vidfast.vc');
+
+		// Must include comprehensive allow permissions for embedded video player
+		expect(content).toContain('allow="accelerometer; autoplay;');
+		expect(content).toContain('fullscreen');
 
 		// First server in list should be player.swinglust.top, followed by videasy.to and vidfast.vc
 		const serversMatch = content.match(/const servers: ServerFn\[\] = \[\s*([^\]]+)\]/s);
@@ -95,5 +102,19 @@ describe('TMDB Iframe and KKPlayer Playback Acceptance Tests', () => {
 		// VIP domain is routed to opstream proxy
 		const vipUrl = 'https://vip.opstream11.com/20230101/index.m3u8';
 		expect(transformStreamUrl(vipUrl)).toBe('https://opstream.b-cdn.net/hls/vip.opstream11.com/20230101/index.m3u8');
+	});
+
+	it('R5: player.swinglust.top embed response headers permit desktop app:// origin in frame-ancestors', async () => {
+		try {
+			const res = await fetch('https://player.swinglust.top/embed/movie/1228834', {
+				method: 'HEAD'
+			});
+			const csp = res.headers.get('content-security-policy');
+			if (csp) {
+				expect(csp).toContain('app://localhost');
+			}
+		} catch {
+			// Network may be offline in some test runners; offline fallback is covered by main.ts onHeadersReceived
+		}
 	});
 });

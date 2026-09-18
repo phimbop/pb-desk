@@ -1,26 +1,19 @@
 {
-  "sessionId": "53e09d65-e5d9-4f17-b29c-5cce77a55af9",
-  "title": "Release v0.1.11: Production auto-updater streaming download, platform asset resolution, AppImage/NSIS relaunch, and Supabase sync",
+  "sessionId": "b779e12b-b32b-4060-acd9-3e56141297e7",
+  "title": "Release v0.1.12: Iframe playback fixes, Cloudflare CSP alignment, and Supabase version sync",
   "requirements": [
     {
       "id": "R1",
-      "description": "Bump version to 0.1.11 across all Cargo crate manifests, package.json, updater service, and about page",
+      "description": "Bump version to 0.1.12 across all Cargo crate manifests, package.json, updater service, and about page",
       "checks": [
         "appimage-media-framework-tests"
       ]
     },
     {
       "id": "R2",
-      "description": "Fix auto-updater streaming download, platform asset resolution, and cross-platform relaunch flow",
+      "description": "Verify player iframe playback fixes, CardVideoPlay permissions, and Electron onHeadersReceived support",
       "checks": [
-        "desktop-updater-flow-tests"
-      ]
-    },
-    {
-      "id": "R3",
-      "description": "Verify background running, autostart, and native notification runtime consistency",
-      "checks": [
-        "desktop-runtime-audit-tests"
+        "player-issues-tests"
       ]
     }
   ],
@@ -37,23 +30,12 @@
       "testFormat": "bun"
     },
     {
-      "id": "desktop-updater-flow-tests",
+      "id": "player-issues-tests",
       "command": [
         "bun",
         "--no-env-file",
         "test",
-        "scripts/agent/desktop_updater_flow.test.ts"
-      ],
-      "timeoutMs": 60000,
-      "testFormat": "bun"
-    },
-    {
-      "id": "desktop-runtime-audit-tests",
-      "command": [
-        "bun",
-        "--no-env-file",
-        "test",
-        "scripts/agent/desktop_runtime_audit.test.ts"
+        "scripts/agent/player_issues.test.ts"
       ],
       "timeoutMs": 60000,
       "testFormat": "bun"

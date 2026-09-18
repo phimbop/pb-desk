@@ -58,7 +58,7 @@ export async function getOrCreateInstallationId(): Promise<string> {
 
 class UpdaterService {
 	status = $state<UpdateStatus>('idle');
-	currentVersion = $state<string>('0.1.11');
+	currentVersion = $state<string>('0.1.12');
 	updateInfo = $state<UpdateInfo | null>(null);
 	progress = $state<number>(0);
 	downloadedBytes = $state<number>(0);
@@ -220,7 +220,7 @@ class UpdaterService {
 				return false;
 			}
 
-			const currentVersion = '0.1.11';
+			const currentVersion = '0.1.12';
 			const activeVer = this.currentVersion || currentVersion;
 			const { data: latest } = await supabase
 				.from('app_versions')

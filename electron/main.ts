@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Menu, net, Notification, protocol, shell, Tray } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, net, Notification, protocol, session, shell, Tray } from 'electron';
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -748,6 +748,22 @@ ipcMain.handle('show-notification', (_event, { title, body }) => {
 
 // App lifecycle
 app.whenReady().then(() => {
+	// Strip X-Frame-Options and relax frame-ancestors in Content-Security-Policy for embedded player iframes
+	session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+		const responseHeaders = { ...details.responseHeaders };
+		for (const key of Object.keys(responseHeaders)) {
+			const lowerKey = key.toLowerCase();
+			if (lowerKey === 'x-frame-options') {
+				delete responseHeaders[key];
+			} else if (lowerKey === 'content-security-policy') {
+				responseHeaders[key] = responseHeaders[key].map((csp) =>
+					csp.replace(/frame-ancestors[^;]+;?/gi, '')
+				);
+			}
+		}
+		callback({ cancel: false, responseHeaders });
+	});
+
 	// Intercept app:// requests to serve static files from build directory
 	protocol.handle('app', (request) => {
 		const url = new URL(request.url);

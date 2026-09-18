@@ -200,7 +200,8 @@
 				class="absolute {src.includes('phimbop.top') ? '-top-8' : ''} w-full h-fit md:h-full z-10"
 				frameborder="0"
 				allowfullscreen
-				title="phimbop.top"
+				allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+				title="PHIMBOP Player"
 				referrerpolicy="no-referrer-when-downgrade"
 				onerror={next}
 			></iframe>
@@ -220,7 +221,8 @@
 				class="absolute {tvSrc.includes('phimbop.top') ? '-top-8' : ''} w-full h-fit md:h-full z-10"
 				frameborder="0"
 				allowfullscreen
-				title="phimbop.top"
+				allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+				title="PHIMBOP Player"
 				referrerpolicy="no-referrer-when-downgrade"
 				onerror={next}
 			></iframe>
