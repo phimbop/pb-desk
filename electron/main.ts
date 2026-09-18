@@ -5,6 +5,11 @@ import * as path from 'node:path';
 import * as readline from 'node:readline';
 import { pathToFileURL } from 'node:url';
 
+// Set Application User Model ID on Windows for native notifications
+if (process.platform === 'win32') {
+	app.setAppUserModelId('com.phimbop.desktop');
+}
+
 // Register custom protocol for local SPA assets before app is ready
 protocol.registerSchemesAsPrivileged([
 	{
@@ -22,12 +27,14 @@ protocol.registerSchemesAsPrivileged([
 function isDevMode(): boolean {
 	return !app.isPackaged && (process.env.ELECTRON_DEV === 'true' || process.argv.includes('--dev'));
 }
+
 const DEFAULT_SUPABASE_KEY =
 	'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oeGdkc2FueWtwbm1naHRvaGZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTY1NjYzNTYsImV4cCI6MjAxMjE0MjM1Nn0._M573rGbATQfCvNRLqQHk7dCXSArLo6J_KI2M9HUBd0';
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let isQuitting = false;
+let cachedMinimizeToTray = true;
 let sidecarProcess: ChildProcessWithoutNullStreams | null = null;
 let nextRequestId = 1;
 const pendingRequests = new Map<
@@ -75,6 +82,34 @@ function resolveSidecarPath(): string {
 	return path.join(process.resourcesPath, 'bin', binName);
 }
 
+function showNativeNotification(title: string, body: string, onClick?: () => void) {
+	if (!Notification.isSupported()) return;
+
+	const appRoot = getAppRoot();
+	const iconPath = app.isPackaged
+		? path.join(process.resourcesPath, 'icons/128x128.png')
+		: path.resolve(appRoot, 'electron/icons/128x128.png');
+
+	const notif = new Notification({
+		title,
+		body,
+		icon: fs.existsSync(iconPath) ? iconPath : undefined,
+		silent: false
+	});
+
+	notif.on('click', () => {
+		if (onClick) {
+			onClick();
+		} else if (mainWindow) {
+			if (mainWindow.isMinimized()) mainWindow.restore();
+			if (!mainWindow.isVisible()) mainWindow.show();
+			mainWindow.focus();
+		}
+	});
+
+	notif.show();
+}
+
 function startSidecar() {
 	const sidecarBin = resolveSidecarPath();
 	const dataDir = app.getPath('userData');
@@ -109,16 +144,22 @@ function startSidecar() {
 			if (parsed.type === 'event') {
 				if (parsed.event === 'movie-update') {
 					const ev = parsed.data;
+					const movieName = ev.movieName || ev.movie_name || 'Phim';
 					const title = ev.isNewMovie
 						? '🎬 PHIMBOP - Phim mới cập nhật!'
-						: `🔥 Tập mới: ${ev.movieName || ev.movie_name}`;
+						: `🔥 Tập mới: ${movieName}`;
 					const body = ev.episode
-						? `${ev.movieName || ev.movie_name} vừa cập nhật ${ev.episode}!`
-						: `${ev.movieName || ev.movie_name} đã có mặt trên PHIMBOP!`;
+						? `${movieName} vừa cập nhật ${ev.episode}!`
+						: `${movieName} đã có mặt trên PHIMBOP!`;
 
-					if (Notification.isSupported()) {
-						new Notification({ title, body }).show();
-					}
+					showNativeNotification(title, body, () => {
+						if (mainWindow) {
+							if (mainWindow.isMinimized()) mainWindow.restore();
+							if (!mainWindow.isVisible()) mainWindow.show();
+							mainWindow.focus();
+						}
+					});
+
 					if (mainWindow && !mainWindow.isDestroyed()) {
 						mainWindow.webContents.send('movie-update', ev);
 					}
@@ -152,6 +193,19 @@ function startSidecar() {
 			setTimeout(startSidecar, 2000);
 		}
 	});
+
+	// Preload settings into memory cache
+	invokeSidecar<any>('get_app_settings')
+		.then((settings) => {
+			if (settings) {
+				if (typeof settings.minimizeToTray === 'boolean') {
+					cachedMinimizeToTray = settings.minimizeToTray;
+				} else if (typeof settings.minimize_to_tray === 'boolean') {
+					cachedMinimizeToTray = settings.minimize_to_tray;
+				}
+			}
+		})
+		.catch(() => {});
 }
 
 function invokeSidecar<T = any>(method: string, params: Record<string, unknown> = {}): Promise<T> {
@@ -192,6 +246,7 @@ function createTray() {
 				label: 'Mở PHIMBOP',
 				click: () => {
 					if (mainWindow) {
+						if (mainWindow.isMinimized()) mainWindow.restore();
 						mainWindow.show();
 						mainWindow.focus();
 					}
@@ -221,6 +276,7 @@ function createTray() {
 				if (mainWindow.isVisible()) {
 					mainWindow.hide();
 				} else {
+					if (mainWindow.isMinimized()) mainWindow.restore();
 					mainWindow.show();
 					mainWindow.focus();
 				}
@@ -235,6 +291,8 @@ function createWindow() {
 		? path.join(process.resourcesPath, 'icons/128x128.png')
 		: path.resolve(appRoot, 'electron/icons/128x128.png');
 
+	const startMinimized = process.argv.includes('--minimized') || process.argv.includes('--hidden');
+
 	mainWindow = new BrowserWindow({
 		title: 'PHIMBOP - Phim gì cũng có!',
 		width: 1360,
@@ -242,6 +300,7 @@ function createWindow() {
 		minWidth: 960,
 		minHeight: 640,
 		backgroundColor: '#0a0a0a',
+		show: !startMinimized,
 		autoHideMenuBar: true,
 		icon: fs.existsSync(iconPath) ? iconPath : undefined,
 		webPreferences: {
@@ -255,19 +314,13 @@ function createWindow() {
 
 	mainWindow.setMenu(null);
 
-	// Window close interception for minimize to tray
-	mainWindow.on('close', async (e) => {
+	// Synchronous window close interception for minimize to tray
+	mainWindow.on('close', (e) => {
 		if (isQuitting) return;
 
-		try {
-			const settings = await invokeSidecar<{ minimize_to_tray?: boolean; minimizeToTray?: boolean }>('get_app_settings');
-			const shouldMinimize = settings?.minimize_to_tray ?? settings?.minimizeToTray ?? true;
-			if (shouldMinimize) {
-				e.preventDefault();
-				mainWindow?.hide();
-			}
-		} catch (_) {
-			// If sidecar check fails, allow normal close
+		if (cachedMinimizeToTray) {
+			e.preventDefault();
+			mainWindow?.hide();
 		}
 	});
 
@@ -281,16 +334,87 @@ function createWindow() {
 	if (isDevMode()) {
 		mainWindow.loadURL('http://localhost:1420').catch((err) => {
 			console.warn('[Electron] Failed to connect to http://localhost:1420, falling back to app://:', err.message);
-			mainWindow?.loadURL('app://localhost/index.html');
+			mainWindow?.loadURL('app://localhost/');
 		});
 	} else {
-		mainWindow.loadURL('app://localhost/index.html');
+		mainWindow.loadURL('app://localhost/');
 	}
 
-	// Hide if started with --minimized flag
-	if (process.argv.includes('--minimized')) {
-		mainWindow.hide();
+	if (!startMinimized) {
+		mainWindow.once('ready-to-show', () => {
+			if (!startMinimized && mainWindow && !mainWindow.isDestroyed()) {
+				mainWindow.show();
+			}
+		});
 	}
+}
+
+// Cross-platform autostart helpers
+function getLinuxAutostartPath(): string {
+	const configHome = process.env.XDG_CONFIG_HOME || path.join(app.getPath('home'), '.config');
+	return path.join(configHome, 'autostart', 'com.phimbop.desktop.desktop');
+}
+
+function getAutostart(): boolean {
+	if (process.platform === 'linux') {
+		const desktopPath = getLinuxAutostartPath();
+		if (fs.existsSync(desktopPath)) {
+			try {
+				const content = fs.readFileSync(desktopPath, 'utf-8');
+				return !content.includes('X-GNOME-Autostart-enabled=false');
+			} catch {
+				return false;
+			}
+		}
+		return false;
+	}
+	return app.getLoginItemSettings().openAtLogin;
+}
+
+function setAutostart(enable: boolean): boolean {
+	if (process.platform === 'linux') {
+		const desktopPath = getLinuxAutostartPath();
+		const autostartDir = path.dirname(desktopPath);
+		if (enable) {
+			try {
+				fs.mkdirSync(autostartDir, { recursive: true });
+				const execTarget = process.env.APPIMAGE || process.execPath;
+				const desktopContent = [
+					'[Desktop Entry]',
+					'Type=Application',
+					'Name=PHIMBOP',
+					`Exec="${execTarget}" --minimized`,
+					'Icon=phimbop',
+					'Comment=PHIMBOP - Phim gì cũng có!',
+					'Terminal=false',
+					'StartupNotify=false',
+					'Categories=AudioVideo;Video;Player;',
+					'X-GNOME-Autostart-enabled=true'
+				].join('\n') + '\n';
+				fs.writeFileSync(desktopPath, desktopContent, 'utf-8');
+				return true;
+			} catch (err) {
+				console.error('[Autostart] Failed to write Linux autostart desktop file:', err);
+				return false;
+			}
+		} else {
+			try {
+				if (fs.existsSync(desktopPath)) {
+					fs.unlinkSync(desktopPath);
+				}
+				return true;
+			} catch (err) {
+				console.error('[Autostart] Failed to remove Linux autostart desktop file:', err);
+				return false;
+			}
+		}
+	}
+
+	app.setLoginItemSettings({
+		openAtLogin: enable,
+		args: ['--minimized']
+	});
+	return true;
 }
 
 // IPC Handlers
@@ -305,7 +429,25 @@ ipcMain.handle('pb-invoke', async (_event, { command, args }) => {
 		throw new Error('Only http/https URLs allowed');
 	}
 
-	return await invokeSidecar(command, args || {});
+	// Synchronize cached minimize to tray state when settings are saved
+	if (command === 'save_app_settings') {
+		const s = args?.settings as any;
+		if (s && typeof s === 'object') {
+			if (typeof s.minimizeToTray === 'boolean') cachedMinimizeToTray = s.minimizeToTray;
+			if (typeof s.minimize_to_tray === 'boolean') cachedMinimizeToTray = s.minimize_to_tray;
+		}
+	}
+
+	const res = await invokeSidecar(command, args || {});
+
+	// Update cached minimize to tray state when settings are fetched
+	if (command === 'get_app_settings' && res && typeof res === 'object') {
+		const s = res as any;
+		if (typeof s.minimizeToTray === 'boolean') cachedMinimizeToTray = s.minimizeToTray;
+		if (typeof s.minimize_to_tray === 'boolean') cachedMinimizeToTray = s.minimize_to_tray;
+	}
+
+	return res;
 });
 
 ipcMain.handle('open-external-url', async (_event, url: string) => {
@@ -356,21 +498,15 @@ ipcMain.handle('updater-relaunch', () => {
 });
 
 ipcMain.handle('autostart-get', () => {
-	return app.getLoginItemSettings().openAtLogin;
+	return getAutostart();
 });
 
 ipcMain.handle('autostart-set', (_event, enable: boolean) => {
-	app.setLoginItemSettings({
-		openAtLogin: enable,
-		args: ['--minimized']
-	});
-	return true;
+	return setAutostart(enable);
 });
 
 ipcMain.handle('show-notification', (_event, { title, body }) => {
-	if (Notification.isSupported()) {
-		new Notification({ title, body }).show();
-	}
+	showNativeNotification(title, body);
 	return true;
 });
 
@@ -403,6 +539,7 @@ app.whenReady().then(() => {
 		if (BrowserWindow.getAllWindows().length === 0) {
 			createWindow();
 		} else if (mainWindow) {
+			if (mainWindow.isMinimized()) mainWindow.restore();
 			mainWindow.show();
 			mainWindow.focus();
 		}

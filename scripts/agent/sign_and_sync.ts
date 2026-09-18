@@ -4,7 +4,7 @@ import * as path from 'node:path';
 import { syncReleaseToSupabase } from './sync_supabase_versions';
 
 async function main() {
-	const tag = process.argv[2] || 'v0.1.9';
+	const tag = process.argv[2] || 'v0.1.10';
 	const privateKey = process.env.TAURI_SIGNING_PRIVATE_KEY;
 	const password = process.env.TAURI_SIGNING_PRIVATE_KEY_PASSWORD || '';
 

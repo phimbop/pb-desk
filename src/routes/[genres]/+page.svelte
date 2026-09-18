@@ -18,7 +18,14 @@
 	let error = $state<string | null>(null);
 
 	const loadMovies = async (p: number) => {
-		if (!genreSlug || locales.includes(genreSlug as any)) return;
+		if (
+			!genreSlug ||
+			locales.includes(genreSlug as any) ||
+			genreSlug === 'index.html' ||
+			genreSlug === 'index' ||
+			genreSlug.endsWith('.html')
+		)
+			return;
 		loading = true;
 		error = null;
 		try {
@@ -35,7 +42,13 @@
 
 	$effect(() => {
 		const currentSlug = genreSlug;
-		if (locales.includes(currentSlug as any)) {
+		if (
+			!currentSlug ||
+			locales.includes(currentSlug as any) ||
+			currentSlug === 'index.html' ||
+			currentSlug === 'index' ||
+			currentSlug.endsWith('.html')
+		) {
 			goto('/', { replaceState: true });
 			return;
 		}

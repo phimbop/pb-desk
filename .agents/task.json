@@ -1,29 +1,27 @@
 {
-  "sessionId": "f32982ee-ea5f-45c1-ab49-9c5de82735f8",
-  "title": "Release v0.1.9: Fix Electron black screen via custom protocol and Tauri Minisign update signing",
+  "sessionId": "53e09d65-e5d9-4f17-b29c-5cce77a55af9",
+  "title": "Release v0.1.10: Fix launch 404, standardize background running, autostart, and notifications, and sync Supabase",
   "requirements": [
     {
       "id": "R1",
-      "description": "Bump version to 0.1.9 across all Cargo crate manifests, package.json, updater service, and about page",
+      "description": "Bump version to 0.1.10 across all Cargo crate manifests, package.json, updater service, and about page",
       "checks": [
-        "appimage-media-framework-tests",
-        "updater-tests"
+        "appimage-media-framework-tests"
       ]
     },
     {
       "id": "R2",
-      "description": "Fix Electron production black screen by registering custom app:// protocol for SvelteKit static build assets and dynamically resolving isDevMode",
+      "description": "Fix launch 404 error and standardize background running, cross-platform autostart, and native notifications",
       "checks": [
-        "ci-workflow-tests",
+        "desktop-runtime-audit-tests",
         "electron-migration-tests"
       ]
     },
     {
       "id": "R3",
-      "description": "Support cryptographic Minisign signing of Electron release artifacts and synchronization to Supabase app_versions table",
+      "description": "Verify application build, menu removal, and release readiness before tagging",
       "checks": [
-        "updater-tests",
-        "appimage-media-framework-tests"
+        "menu-removal-tests"
       ]
     }
   ],
@@ -40,23 +38,12 @@
       "testFormat": "bun"
     },
     {
-      "id": "ci-workflow-tests",
+      "id": "desktop-runtime-audit-tests",
       "command": [
         "bun",
         "--no-env-file",
         "test",
-        "scripts/agent/ci_workflow.test.ts"
-      ],
-      "timeoutMs": 60000,
-      "testFormat": "bun"
-    },
-    {
-      "id": "updater-tests",
-      "command": [
-        "bun",
-        "--no-env-file",
-        "test",
-        "scripts/agent/updater.test.ts"
+        "scripts/agent/desktop_runtime_audit.test.ts"
       ],
       "timeoutMs": 60000,
       "testFormat": "bun"
@@ -73,12 +60,12 @@
       "testFormat": "bun"
     },
     {
-      "id": "installer-script-tests",
+      "id": "menu-removal-tests",
       "command": [
         "bun",
         "--no-env-file",
         "test",
-        "scripts/agent/installer_script.test.ts"
+        "scripts/agent/menu_removal.test.ts"
       ],
       "timeoutMs": 60000,
       "testFormat": "bun"

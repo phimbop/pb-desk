@@ -118,7 +118,7 @@ class UpdaterService {
 					update = {
 						available: true,
 						version: checkRes.version,
-						currentVersion: checkRes.currentVersion || '0.1.9',
+						currentVersion: checkRes.currentVersion || '0.1.10',
 						body: checkRes.notes,
 						url: checkRes.url
 					};
@@ -205,7 +205,7 @@ class UpdaterService {
 				return false;
 			}
 
-			const currentVersion = '0.1.9';
+			const currentVersion = '0.1.10';
 			const { data: latest } = await supabase
 				.from('app_versions')
 				.select('*')
