@@ -71,6 +71,17 @@
       ],
       "timeoutMs": 60000,
       "testFormat": "bun"
+    },
+    {
+      "id": "installer-script-tests",
+      "command": [
+        "bun",
+        "--no-env-file",
+        "test",
+        "scripts/agent/installer_script.test.ts"
+      ],
+      "timeoutMs": 60000,
+      "testFormat": "bun"
     }
   ]
 }

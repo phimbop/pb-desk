@@ -321,8 +321,8 @@ install_macos() {
     local local_dmg=""
     local match_pattern=""
 
-    if [ "$ARCH" = "aarch64" ]; then
-        match_pattern="aarch64[^\"]*\.dmg"
+    if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
+        match_pattern="(arm64|aarch64)[^\"]*\.dmg"
     else
         match_pattern="(x64|x86_64)[^\"]*\.dmg"
     fi
@@ -333,6 +333,13 @@ install_macos() {
         if [ -z "$dmg_url" ] && [ "$ARCH" = "aarch64" ]; then
             log_warn "Không tìm thấy bản native Apple Silicon, kiểm tra bản x64 (Rosetta 2)..."
             dmg_url=$(get_download_url "(x64|x86_64)[^\"]*\.dmg")
+        fi
+        if [ -z "$dmg_url" ]; then
+            if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
+                dmg_url=$(echo "$RELEASE_JSON" | grep -v "\.sig" | grep -E -o "https://[^\"]*(arm64|aarch64)[^\"]*\.dmg" | head -n 1 || true)
+            else
+                dmg_url=$(echo "$RELEASE_JSON" | grep -v "\.sig" | grep -E -o "https://[^\"]*\.dmg" | grep -v -E "(arm64|aarch64)" | head -n 1 || true)
+            fi
         fi
     fi
 
@@ -434,15 +441,30 @@ install_linux() {
         log_info "Sử dụng bản build native release: $local_file"
     elif [ "$INSTALL_FORMAT" = "deb" ]; then
         target_ext="deb"
-        pattern="(amd64|x86_64)[^\"]*\.deb"
+        if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
+            pattern="arm64[^\"]*\.deb"
+        else
+            pattern="(amd64|x86_64)[^\"]*\.deb"
+        fi
     else
         target_ext="AppImage"
-        pattern="(amd64|x86_64)[^\"]*\.AppImage"
+        if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
+            pattern="(arm64|aarch64)[^\"]*\.AppImage"
+        else
+            pattern="(amd64|x86_64)[^\"]*\.AppImage"
+        fi
     fi
 
     # Check online release
     if [ "$INSTALL_FORMAT" != "native" ] && fetch_release_info; then
         download_url=$(get_download_url "$pattern")
+        if [ -z "$download_url" ] && [ "$INSTALL_FORMAT" = "appimage" ]; then
+            if [ "$ARCH" != "aarch64" ] && [ "$ARCH" != "arm64" ]; then
+                download_url=$(echo "$RELEASE_JSON" | grep -v "\.sig" | grep -E -o "https://[^\"]*\.AppImage" | grep -v -E "(arm64|aarch64)" | head -n 1 || true)
+            else
+                download_url=$(get_download_url "[^\"]*\.AppImage")
+            fi
+        fi
     fi
 
     # Fallback to AppImage if deb not found, or vice-versa
@@ -450,8 +472,11 @@ install_linux() {
         if [ "$INSTALL_FORMAT" = "deb" ]; then
             log_warn "Không tìm thấy gói .deb, chuyển sang AppImage..."
             INSTALL_FORMAT="appimage"
-            pattern="(amd64|x86_64)[^\"]*\.AppImage"
-            download_url=$(get_download_url "$pattern")
+            if [ "$ARCH" != "aarch64" ] && [ "$ARCH" != "arm64" ]; then
+                download_url=$(echo "$RELEASE_JSON" | grep -v "\.sig" | grep -E -o "https://[^\"]*\.AppImage" | grep -v -E "(arm64|aarch64)" | head -n 1 || true)
+            else
+                download_url=$(get_download_url "[^\"]*\.AppImage")
+            fi
         fi
     fi
 
