@@ -1,25 +1,55 @@
 {
-  "sessionId": "ee0f286c-92ae-4758-aae4-46246f738867",
-  "title": "Multilanguage localization for version update card and update modal",
+  "sessionId": "f32982ee-ea5f-45c1-ab49-9c5de82735f8",
+  "title": "Release v0.1.8: Electron multiplatform CI/CD and Supabase app_versions synchronization",
   "requirements": [
     {
       "id": "R1",
-      "description": "Localize application version and update check button on About Us page (src/routes/settings/about/+page.svelte) and all dialog states in UpdateModal.svelte with Paraglide messages",
+      "description": "Bump version to 0.1.8 across all Cargo crate manifests, package.json, updater service, and about page",
       "checks": [
-        "updater-tests",
-        "updater-i18n-tests"
+        "appimage-media-framework-tests",
+        "updater-tests"
       ]
     },
     {
       "id": "R2",
-      "description": "Provide comprehensive translation coverage across all 17 supported locales for all updater keys in Paraglide",
+      "description": "Configure multi-platform GitHub Actions release workflow for Electron build using Bun, Rust sidecar, and electron-builder",
       "checks": [
-        "i18n-tests",
-        "updater-i18n-tests"
+        "ci-workflow-tests",
+        "electron-migration-tests"
+      ]
+    },
+    {
+      "id": "R3",
+      "description": "Support syncing release artifacts and metadata to Supabase app_versions table",
+      "checks": [
+        "updater-tests",
+        "appimage-media-framework-tests"
       ]
     }
   ],
   "checks": [
+    {
+      "id": "appimage-media-framework-tests",
+      "command": [
+        "bun",
+        "--no-env-file",
+        "test",
+        "scripts/agent/appimage_media_framework.test.ts"
+      ],
+      "timeoutMs": 60000,
+      "testFormat": "bun"
+    },
+    {
+      "id": "ci-workflow-tests",
+      "command": [
+        "bun",
+        "--no-env-file",
+        "test",
+        "scripts/agent/ci_workflow.test.ts"
+      ],
+      "timeoutMs": 60000,
+      "testFormat": "bun"
+    },
     {
       "id": "updater-tests",
       "command": [
@@ -32,23 +62,12 @@
       "testFormat": "bun"
     },
     {
-      "id": "updater-i18n-tests",
+      "id": "electron-migration-tests",
       "command": [
         "bun",
         "--no-env-file",
         "test",
-        "scripts/agent/updater_i18n.test.ts"
-      ],
-      "timeoutMs": 60000,
-      "testFormat": "bun"
-    },
-    {
-      "id": "i18n-tests",
-      "command": [
-        "bun",
-        "--no-env-file",
-        "test",
-        "scripts/agent/i18n.test.ts"
+        "scripts/agent/electron_migration.test.ts"
       ],
       "timeoutMs": 60000,
       "testFormat": "bun"

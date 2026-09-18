@@ -27,22 +27,22 @@ jobs:
           # macOS Apple Silicon (M1/M2/M3/M4) -> .dmg
           - platform: macos-latest
             target: aarch64-apple-darwin
-            args: '--target aarch64-apple-darwin'
+            builder_args: '--mac dmg zip --arm64'
             name: macos-arm64
           # macOS Intel (x86_64) -> .dmg
           - platform: macos-latest
             target: x86_64-apple-darwin
-            args: '--target x86_64-apple-darwin'
+            builder_args: '--mac dmg zip --x64'
             name: macos-x86_64
           # Linux Ubuntu (x86_64) -> .AppImage, .deb
           - platform: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
-            args: ''
+            builder_args: '--linux AppImage deb --x64'
             name: linux-x86_64
           # Windows (x86_64) -> .exe (NSIS installer), .msi
           - platform: windows-latest
             target: x86_64-pc-windows-msvc
-            args: ''
+            builder_args: '--win nsis portable --x64'
             name: windows-x86_64
 
     runs-on: ${{ matrix.platform }}
@@ -66,7 +66,6 @@ jobs:
         with:
           workspaces: |
             .
-            src-tauri
           key: ${{ matrix.target }}
 
       - name: Install Linux dependencies (WebKitGTK, RSVG, GStreamer codecs, Mold linker)
@@ -88,39 +87,71 @@ jobs:
             gstreamer1.0-libav
 
       - name: Install frontend dependencies
-        run: bun install --frozen-lockfile
+        run: bun install
 
-      - name: Build Tauri Application & Create Release
-        uses: tauri-apps/tauri-action@v0
+      - name: Build Rust Sidecar (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          cargo build --release -p pb_sidecar --target ${{ matrix.target }}
+          mkdir -p target/release
+          cp target/${{ matrix.target }}/release/pb-sidecar target/release/pb-sidecar
+
+      - name: Build Rust Sidecar (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          cargo build --release -p pb_sidecar --target ${{ matrix.target }}
+          if (!(Test-Path "target/release")) { New-Item -ItemType Directory -Path "target/release" }
+          Copy-Item "target/${{ matrix.target }}/release/pb-sidecar.exe" -Destination "target/release/pb-sidecar.exe"
+          Copy-Item "target/${{ matrix.target }}/release/pb-sidecar.exe" -Destination "target/release/pb-sidecar"
+
+      - name: Build Frontend & Electron App
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
           TMDB_READ_ACCESS_TOKEN: ${{ secrets.TMDB_READ_ACCESS_TOKEN }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          bun run build:frontend
+          bun run build:electron
+
+      - name: Build & Package with electron-builder
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          bunx electron-builder ${{ matrix.builder_args }} --publish never
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.ref_type == 'tag' && github.ref_name || 'v__VERSION__' }}
-          releaseName: 'PHIMBOP v__VERSION__'
-          releaseBody: |
-            ## PHIMBOP Desktop v__VERSION__
+          name: PHIMBOP ${{ github.ref_name }}
+          draft: ${{ github.event.inputs.release_draft == 'true' }}
+          prerelease: false
+          body: |
+            ## PHIMBOP Desktop ${{ github.ref_name }}
             
             Ứng dụng xem phim desktop đa nền tảng.
             
             ### Các định dạng phát hành:
-            - **Windows**: `PHIMBOP_*_x64-setup.exe` (NSIS Installer) & `PHIMBOP_*_x64_en-US.msi`
+            - **Windows**: `PHIMBOP_*_x64-setup.exe` (NSIS Installer) & `PHIMBOP_*_x64.exe`
             - **macOS**: `PHIMBOP_*_aarch64.dmg` (Apple Silicon M-series) & `PHIMBOP_*_x64.dmg` (Intel)
             - **Linux**: `PHIMBOP_*_amd64.AppImage` (Portable) & `PHIMBOP_*_amd64.deb` (Debian/Ubuntu)
-          releaseDraft: ${{ github.event.inputs.release_draft == 'true' }}
-          prerelease: false
-          args: ${{ matrix.args }}
+          files: |
+            dist-electron/*.AppImage
+            dist-electron/*.deb
+            dist-electron/*.dmg
+            dist-electron/*.zip
+            dist-electron/*.exe
+            dist-electron/*.yml
+            dist-electron/*.blockmap
 
       - name: Upload build artifacts (CI backup)
         uses: actions/upload-artifact@v4
         with:
           name: phimbop-${{ matrix.name }}-bundles
           path: |
-            src-tauri/target/${{ matrix.target }}/release/bundle/
-            src-tauri/target/release/bundle/
+            dist-electron/
           if-no-files-found: ignore
           retention-days: 14

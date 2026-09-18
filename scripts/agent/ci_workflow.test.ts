@@ -61,9 +61,9 @@ describe("GitHub Actions Multi-Platform CI/CD Workflow", () => {
     expect(content).toContain("clang");
   });
 
-  test("workflow uses official tauri-action and uploads artifacts", () => {
+  test("workflow uses electron-builder and uploads artifacts", () => {
     const content = readFileSync(workflowPath, "utf-8");
-    expect(content).toContain("tauri-apps/tauri-action");
+    expect(content).toContain("electron-builder");
     expect(content).toContain("actions/upload-artifact");
   });
 

@@ -43,16 +43,52 @@ interface TauriLatestJson {
 }
 
 export async function syncReleaseToSupabase(tag: string) {
+	let manifest: TauriLatestJson | null = null;
 	const latestJsonUrl = `https://github.com/phimbop/pb-desk/releases/download/${tag}/latest.json`;
 	console.log(`Fetching release manifest for ${tag}: ${latestJsonUrl}`);
 
 	const res = await fetch(latestJsonUrl);
-	if (!res.ok) {
-		console.warn(`Tag ${tag} does not have latest.json yet (status ${res.status}). Skipping.`);
-		return false;
+	if (res.ok) {
+		manifest = (await res.json()) as TauriLatestJson;
+	} else {
+		console.log(`Tag ${tag} does not have latest.json (status ${res.status}). Checking GitHub Release API...`);
+		const ghRes = await fetch(`https://api.github.com/repos/phimbop/pb-desk/releases/tags/${tag}`, {
+			headers: { 'User-Agent': 'pb-desk-sync' }
+		});
+		if (!ghRes.ok) {
+			console.warn(`Tag ${tag} release not found on GitHub (status ${ghRes.status}). Skipping.`);
+			return false;
+		}
+		const ghData = (await ghRes.json()) as any;
+		const platforms: Record<string, PlatformArtifact> = {};
+		for (const asset of ghData.assets || []) {
+			const name = asset.name as string;
+			const downloadUrl = asset.browser_download_url as string;
+			const sig = `electron-${tag}`;
+			if (name.endsWith('.AppImage')) {
+				platforms['linux-x86_64'] = { url: downloadUrl, signature: sig };
+				platforms['linux-x86_64-appimage'] = { url: downloadUrl, signature: sig };
+			} else if (name.endsWith('.deb')) {
+				platforms['linux-x86_64-deb'] = { url: downloadUrl, signature: sig };
+			} else if (name.endsWith('.exe')) {
+				platforms['windows-x86_64'] = { url: downloadUrl, signature: sig };
+				platforms['windows-x86_64-nsis'] = { url: downloadUrl, signature: sig };
+			} else if (name.includes('arm64') && name.endsWith('.dmg')) {
+				platforms['darwin-aarch64'] = { url: downloadUrl, signature: sig };
+				platforms['darwin-aarch64-app'] = { url: downloadUrl, signature: sig };
+			} else if (name.endsWith('.dmg')) {
+				platforms['darwin-x86_64'] = { url: downloadUrl, signature: sig };
+				platforms['darwin-x86_64-app'] = { url: downloadUrl, signature: sig };
+			}
+		}
+		manifest = {
+			version: tag.replace(/^v/, ''),
+			notes: ghData.body || `PHIMBOP Desktop ${tag}`,
+			pub_date: ghData.published_at || new Date().toISOString(),
+			platforms
+		};
 	}
 
-	const manifest = (await res.json()) as TauriLatestJson;
 	const version = manifest.version.replace(/^v/, '');
 	const channel = 'stable';
 	const releaseNotes = manifest.notes || `PHIMBOP Desktop ${tag}`;
@@ -148,7 +184,7 @@ export async function syncReleaseToSupabase(tag: string) {
 
 async function main() {
 	const tags = process.argv.slice(2);
-	const tagsToSync = tags.length > 0 ? tags : ['v0.1.1', 'v0.1.2', 'v0.1.3', 'v0.1.4', 'v0.1.5', 'v0.1.6', 'v0.1.7'];
+	const tagsToSync = tags.length > 0 ? tags : ['v0.1.1', 'v0.1.2', 'v0.1.3', 'v0.1.4', 'v0.1.5', 'v0.1.6', 'v0.1.7', 'v0.1.8'];
 
 	console.log(`Syncing releases to Supabase: ${tagsToSync.join(', ')}`);
 	for (const tag of tagsToSync) {

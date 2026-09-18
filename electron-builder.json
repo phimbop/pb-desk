@@ -36,6 +36,16 @@
   },
   "win": {
     "target": ["nsis", "portable"],
-    "icon": "electron/icons/icon.ico"
+    "icon": "electron/icons/icon.ico",
+    "extraResources": [
+      {
+        "from": "target/release/pb-sidecar.exe",
+        "to": "bin/pb-sidecar.exe"
+      },
+      {
+        "from": "electron/icons",
+        "to": "icons"
+      }
+    ]
   }
 }
