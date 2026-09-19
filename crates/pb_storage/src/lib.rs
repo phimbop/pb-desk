@@ -142,6 +142,25 @@ mod tests {
     }
 
     #[test]
+    fn test_app_config_persistence() {
+        let storage = SqliteStorage::new_in_memory().unwrap();
+        assert_eq!(storage.get_app_config("api_domain").unwrap(), None);
+
+        storage.set_app_config("api_domain", "https://custom.phimbop.cfd").unwrap();
+        assert_eq!(
+            storage.get_app_config("api_domain").unwrap(),
+            Some("https://custom.phimbop.cfd".to_string())
+        );
+
+        // Overwrite
+        storage.set_app_config("api_domain", "https://v4.phimbop.cfd").unwrap();
+        assert_eq!(
+            storage.get_app_config("api_domain").unwrap(),
+            Some("https://v4.phimbop.cfd".to_string())
+        );
+    }
+
+    #[test]
     fn test_sqlite_file_persistence_across_restarts() {
         let temp_dir = std::env::temp_dir();
         let db_path = temp_dir.join(format!("pb_test_persistence_{}.db", uuid::Uuid::new_v4()));

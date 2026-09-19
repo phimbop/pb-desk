@@ -1,61 +1,76 @@
 {
-  "sessionId": "03561787-74ed-499b-9d3d-73c3f8d2c408",
-  "title": "Desktop App Multi-language Notification Support and Runtime Audit QA Gate",
+  "sessionId": "6ab47fe3-1ae9-46c4-bc15-1f31d0441366",
+  "title": "Dynamic API Domain Hierarchy, Reverse TMDB Proxy, Electron CORS Adaptation, and SurrealDB 403 Resolution",
   "requirements": [
     {
       "id": "R1",
-      "description": "Support multi-language OS notifications and system tray menu in Electron main process with dynamic locale resolution and IPC synchronization",
+      "description": "Dynamic API Domain Hierarchy and SQLite persistence in Rust sidecar & Electron",
       "checks": [
-        "desktop-runtime-audit",
-        "notification-multilang-test"
+        "api-domain-and-tmdb-proxy"
       ]
     },
     {
       "id": "R2",
-      "description": "Synchronize active locale from Frontend to Electron Main Process and localize notification relative time formatting",
+      "description": "Reverse TMDB Proxy routing in frontend via API domain to bypass ISP blocking",
       "checks": [
-        "notification-multilang-test"
+        "api-domain-and-tmdb-proxy",
+        "production-media-and-tmdb"
       ]
     },
     {
       "id": "R3",
-      "description": "Provide complete non-empty localized notification strings across all 17 supported locales in Paraglide",
+      "description": "Dynamic CORS handling in Electron main process injecting Access-Control headers for API domain and app requests",
       "checks": [
-        "notification-multilang-test",
-        "i18n-audit-tests"
+        "api-domain-and-tmdb-proxy"
+      ]
+    },
+    {
+      "id": "R4",
+      "description": "SurrealDB 403 mitigation & clean remote API forwarding for auth and user data",
+      "checks": [
+        "api-domain-and-tmdb-proxy",
+        "surreal-security"
+      ]
+    },
+    {
+      "id": "R5",
+      "description": "CORS preflight 405 avoidance on TMDB proxy, Electron OPTIONS override, and direct TMDB fallback",
+      "checks": [
+        "api-domain-and-tmdb-proxy",
+        "production-media-and-tmdb"
       ]
     }
   ],
   "checks": [
     {
-      "id": "desktop-runtime-audit",
+      "id": "api-domain-and-tmdb-proxy",
       "command": [
         "bun",
         "--no-env-file",
         "test",
-        "scripts/agent/desktop_runtime_audit.test.ts"
+        "scripts/agent/api_domain_and_tmdb_proxy.test.ts"
       ],
       "timeoutMs": 60000,
       "testFormat": "bun"
     },
     {
-      "id": "notification-multilang-test",
+      "id": "surreal-security",
       "command": [
         "bun",
         "--no-env-file",
         "test",
-        "scripts/agent/notification_multilang.test.ts"
+        "scripts/agent/surreal_security.test.ts"
       ],
       "timeoutMs": 60000,
       "testFormat": "bun"
     },
     {
-      "id": "i18n-audit-tests",
+      "id": "production-media-and-tmdb",
       "command": [
         "bun",
         "--no-env-file",
         "test",
-        "scripts/agent/i18n.test.ts"
+        "scripts/agent/production_media_and_tmdb.test.ts"
       ],
       "timeoutMs": 60000,
       "testFormat": "bun"

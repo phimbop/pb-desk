@@ -51,48 +51,95 @@ export const moviesHandler = {
 		}
 	},
 	tmdbGetMovies: async (listMovieType: TmdbMovieList, page: number, language = 'vi-VN') => {
+		const primaryUrl = getTmdbUrl(`movie/${listMovieType}?language=${language}&page=${page}`);
 		try {
-			const result = await fetch(
-				getTmdbUrl(`movie/${listMovieType}?language=${language}&page=${page}`),
-				{ headers: getTmdbHeaders() }
-			);
-			return await result.json();
+			const result = await fetch(primaryUrl, { headers: getTmdbHeaders(primaryUrl) });
+			if (result.ok) {
+				return await result.json();
+			}
+			throw new Error(`Failed to fetch movies from primary URL: ${result.status}`);
 		} catch (error) {
-			console.error(error);
+			console.warn('[movieStore] tmdbGetMovies primary failed, retrying direct TMDB:', error);
+			try {
+				const directUrl = `https://api.themoviedb.org/3/movie/${listMovieType}?language=${language}&page=${page}`;
+				const directResult = await fetch(directUrl, { headers: getTmdbHeaders(directUrl) });
+				if (directResult.ok) {
+					return await directResult.json();
+				}
+			} catch (fallbackError) {
+				console.error('[movieStore] tmdbGetMovies direct fallback failed:', fallbackError);
+			}
+			return { results: [], total_pages: 0, page };
 		}
 	},
 	tmdbSearchMovies: async (query: string, page?: number) => {
+		const path = `search/movie?query=${query}&language=vi-VN&include_adult=false${
+			page ? '&page=' + page : ''
+		}`;
+		const primaryUrl = getTmdbUrl(path);
 		try {
-			const result = await fetch(
-				getTmdbUrl(`search/movie?query=${query}&language=vi-VN&include_adult=false${
-					page ? '&page=' + page : ''
-				}`),
-				{ headers: getTmdbHeaders() }
-			);
-			return await result.json();
+			const result = await fetch(primaryUrl, { headers: getTmdbHeaders(primaryUrl) });
+			if (result.ok) {
+				return await result.json();
+			}
+			throw new Error(`Search failed: ${result.status}`);
 		} catch (error) {
+			console.warn('[movieStore] Search primary failed, retrying direct TMDB:', error);
+			try {
+				const directUrl = `https://api.themoviedb.org/3/${path}`;
+				const directResult = await fetch(directUrl, { headers: getTmdbHeaders(directUrl) });
+				if (directResult.ok) {
+					return await directResult.json();
+				}
+			} catch (fallbackError) {
+				console.error('[movieStore] Search direct fallback failed:', fallbackError);
+			}
 			throw error;
 		}
 	},
 	tmdbGetMovieDetails: async (movieId: number, language = 'vi-VN') => {
+		const path = `movie/${movieId}?append_to_response=credits&language=${language}`;
+		const primaryUrl = getTmdbUrl(path);
 		try {
-			const result = await fetch(
-				getTmdbUrl(`movie/${movieId}?append_to_response=credits&language=${language}`),
-				{ headers: getTmdbHeaders() }
-			);
-			return await result.json();
+			const result = await fetch(primaryUrl, { headers: getTmdbHeaders(primaryUrl) });
+			if (result.ok) {
+				return await result.json();
+			}
+			throw new Error(`Movie details failed: ${result.status}`);
 		} catch (error) {
+			console.warn('[movieStore] Movie details primary failed, retrying direct TMDB:', error);
+			try {
+				const directUrl = `https://api.themoviedb.org/3/${path}`;
+				const directResult = await fetch(directUrl, { headers: getTmdbHeaders(directUrl) });
+				if (directResult.ok) {
+					return await directResult.json();
+				}
+			} catch (fallbackError) {
+				console.error('[movieStore] Movie details direct fallback failed:', fallbackError);
+			}
 			throw error;
 		}
 	},
 	tmdbRelatedMovies: async (movieId: number, page: number) => {
+		const path = `movie/${movieId}/similar?language=vi-VN&page=${page}`;
+		const primaryUrl = getTmdbUrl(path);
 		try {
-			const result = await fetch(
-				getTmdbUrl(`movie/${movieId}/similar?language=vi-VN&page=${page}`),
-				{ headers: getTmdbHeaders() }
-			);
-			return await result.json();
+			const result = await fetch(primaryUrl, { headers: getTmdbHeaders(primaryUrl) });
+			if (result.ok) {
+				return await result.json();
+			}
+			throw new Error(`Related movies failed: ${result.status}`);
 		} catch (error) {
+			console.warn('[movieStore] Related movies primary failed, retrying direct TMDB:', error);
+			try {
+				const directUrl = `https://api.themoviedb.org/3/${path}`;
+				const directResult = await fetch(directUrl, { headers: getTmdbHeaders(directUrl) });
+				if (directResult.ok) {
+					return await directResult.json();
+				}
+			} catch (fallbackError) {
+				console.error('[movieStore] Related movies direct fallback failed:', fallbackError);
+			}
 			throw error;
 		}
 	},
@@ -184,67 +231,126 @@ export const moviesHandler = {
 		}
 	},
 	tmdbGetActorInfo: async (actorId: number, language = 'vi-VN') => {
+		const path = `person/${actorId}?append_to_response=external_ids,movie_credits,tv_credits&language=${language}`;
+		const primaryUrl = getTmdbUrl(path);
 		try {
-			const result = await fetch(
-				getTmdbUrl(`person/${actorId}?append_to_response=external_ids,movie_credits,tv_credits&language=${language}`),
-				{ headers: getTmdbHeaders() }
-			);
-			return await result.json();
+			const result = await fetch(primaryUrl, { headers: getTmdbHeaders(primaryUrl) });
+			if (result.ok) {
+				return await result.json();
+			}
+			throw new Error(`Failed to fetch actor info: ${result.status}`);
 		} catch (error) {
+			console.warn('[movieStore] tmdbGetActorInfo primary failed, retrying direct TMDB:', error);
+			try {
+				const directUrl = `https://api.themoviedb.org/3/${path}`;
+				const directResult = await fetch(directUrl, { headers: getTmdbHeaders(directUrl) });
+				if (directResult.ok) {
+					return await directResult.json();
+				}
+			} catch (fallbackError) {
+				console.error('[movieStore] tmdbGetActorInfo direct fallback failed:', fallbackError);
+			}
 			throw error;
 		}
 	},
 	tmdbGetTopRateMovies: async (page: number, language = 'vi-VN') => {
+		const primaryUrl = getTmdbUrl(`movie/top_rated?language=${language}&page=${page}`);
 		try {
-			const result = await fetch(
-				getTmdbUrl(`movie/top_rated?language=${language}&page=${page}`),
-				{ headers: getTmdbHeaders() }
-			);
-			if (!result.ok) {
-				return { page: page, results: [], total_pages: 0, total_results: 0 };
+			const result = await fetch(primaryUrl, { headers: getTmdbHeaders(primaryUrl) });
+			if (result.ok) {
+				const data = await result.json();
+				if (data && typeof data.page !== 'number') {
+					data.page = page;
+				}
+				return data;
 			}
-			const data = await result.json();
-			if (data && typeof data.page !== 'number') {
-				data.page = page;
-			}
-			return data;
+			throw new Error(`Failed to fetch top rated movies: ${result.status}`);
 		} catch (error) {
-			console.error('Failed to fetch top rated movies:', error);
+			console.warn('[movieStore] tmdbGetTopRateMovies primary failed, retrying direct TMDB:', error);
+			try {
+				const directUrl = `https://api.themoviedb.org/3/movie/top_rated?language=${language}&page=${page}`;
+				const directResult = await fetch(directUrl, { headers: getTmdbHeaders(directUrl) });
+				if (directResult.ok) {
+					const directData = await directResult.json();
+					if (directData && typeof directData.page !== 'number') {
+						directData.page = page;
+					}
+					return directData;
+				}
+			} catch (fallbackError) {
+				console.error('[movieStore] tmdbGetTopRateMovies direct fallback failed:', fallbackError);
+			}
 			return { page: page, results: [], total_pages: 0, total_results: 0 };
 		}
 	},
 	tmdbGetPopularActors: async (page: number, language = 'vi-VN') => {
+		const path = `person/popular?language=${language}&page=${page}`;
+		const primaryUrl = getTmdbUrl(path);
 		try {
-			const result = await fetch(
-				getTmdbUrl(`person/popular?language=${language}&page=${page}`),
-				{ headers: getTmdbHeaders() }
-			);
-			return await result.json();
+			const result = await fetch(primaryUrl, { headers: getTmdbHeaders(primaryUrl) });
+			if (result.ok) {
+				return await result.json();
+			}
+			throw new Error(`Failed to fetch popular actors: ${result.status}`);
 		} catch (error) {
+			console.warn('[movieStore] tmdbGetPopularActors primary failed, retrying direct TMDB:', error);
+			try {
+				const directUrl = `https://api.themoviedb.org/3/${path}`;
+				const directResult = await fetch(directUrl, { headers: getTmdbHeaders(directUrl) });
+				if (directResult.ok) {
+					return await directResult.json();
+				}
+			} catch (fallbackError) {
+				console.error('[movieStore] tmdbGetPopularActors direct fallback failed:', fallbackError);
+			}
 			throw error;
 		}
 	},
 	tmdbSearchActor: async (query: string, page?: number, language = 'vi-VN') => {
+		const path = `search/person?query=${query}&language=${language}&include_adult=false${
+			page ? '&page=' + page : ''
+		}`;
+		const primaryUrl = getTmdbUrl(path);
 		try {
-			const result = await fetch(
-				getTmdbUrl(`search/person?query=${query}&language=${language}&include_adult=false${
-					page ? '&page=' + page : ''
-				}`),
-				{ headers: getTmdbHeaders() }
-			);
-			return await result.json();
+			const result = await fetch(primaryUrl, { headers: getTmdbHeaders(primaryUrl) });
+			if (result.ok) {
+				return await result.json();
+			}
+			throw new Error(`Failed to search actors: ${result.status}`);
 		} catch (error) {
+			console.warn('[movieStore] tmdbSearchActor primary failed, retrying direct TMDB:', error);
+			try {
+				const directUrl = `https://api.themoviedb.org/3/${path}`;
+				const directResult = await fetch(directUrl, { headers: getTmdbHeaders(directUrl) });
+				if (directResult.ok) {
+					return await directResult.json();
+				}
+			} catch (fallbackError) {
+				console.error('[movieStore] tmdbSearchActor direct fallback failed:', fallbackError);
+			}
 			throw error;
 		}
 	},
 	tmdbGetImages: async (movieId: number) => {
+		const path = `movie/${movieId}/images?include_image_language=en,null`;
+		const primaryUrl = getTmdbUrl(path);
 		try {
-			const result = await fetch(
-				getTmdbUrl(`movie/${movieId}/images?include_image_language=en,null`),
-				{ headers: getTmdbHeaders() }
-			);
-			return await result.json();
+			const result = await fetch(primaryUrl, { headers: getTmdbHeaders(primaryUrl) });
+			if (result.ok) {
+				return await result.json();
+			}
+			throw new Error(`Failed to fetch movie images: ${result.status}`);
 		} catch (error) {
+			console.warn('[movieStore] tmdbGetImages primary failed, retrying direct TMDB:', error);
+			try {
+				const directUrl = `https://api.themoviedb.org/3/${path}`;
+				const directResult = await fetch(directUrl, { headers: getTmdbHeaders(directUrl) });
+				if (directResult.ok) {
+					return await directResult.json();
+				}
+			} catch (fallbackError) {
+				console.error('[movieStore] tmdbGetImages direct fallback failed:', fallbackError);
+			}
 			throw error;
 		}
 	},

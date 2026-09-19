@@ -7,22 +7,32 @@ use pb_core::models::{
     WatchingItem,
 };
 use pb_core::traits::MovieCacheRepository;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 pub struct MovieService {
     api_client: MovieApiClient,
     surreal_client: SurrealClient,
     keydb_client: KeydbClient,
     cache: Arc<dyn MovieCacheRepository>,
+    base_url: Arc<RwLock<String>>,
 }
 
 impl MovieService {
     pub fn new(api_client: MovieApiClient, cache: Arc<dyn MovieCacheRepository>) -> Self {
+        let base_url = crate::surreal_client::load_env_var_or_file("PUBLIC_WEBSITE_URL")
+            .or_else(|| crate::surreal_client::load_env_var_or_file("REMOTE_API_URL"))
+            .or_else(|| crate::surreal_client::load_env_var_or_file("API_URL"))
+            .or_else(|| crate::surreal_client::load_env_var_or_file("API_DOMAIN"))
+            .unwrap_or_else(|| "https://v3.phimbop.cfd".to_string())
+            .trim_end_matches('/')
+            .to_string();
+
         Self {
             api_client,
             surreal_client: SurrealClient::new(),
             keydb_client: KeydbClient::new(),
             cache,
+            base_url: Arc::new(RwLock::new(base_url)),
         }
     }
 
@@ -32,12 +42,28 @@ impl MovieService {
         keydb_client: KeydbClient,
         cache: Arc<dyn MovieCacheRepository>,
     ) -> Self {
+        let base_url = crate::surreal_client::load_env_var_or_file("PUBLIC_WEBSITE_URL")
+            .or_else(|| crate::surreal_client::load_env_var_or_file("REMOTE_API_URL"))
+            .or_else(|| crate::surreal_client::load_env_var_or_file("API_URL"))
+            .or_else(|| crate::surreal_client::load_env_var_or_file("API_DOMAIN"))
+            .unwrap_or_else(|| "https://v3.phimbop.cfd".to_string())
+            .trim_end_matches('/')
+            .to_string();
+
         Self {
             api_client,
             surreal_client,
             keydb_client,
             cache,
+            base_url: Arc::new(RwLock::new(base_url)),
         }
+    }
+
+    pub fn base_url(&self) -> String {
+        self.base_url
+            .read()
+            .map(|l| l.clone())
+            .unwrap_or_else(|_| "https://v3.phimbop.cfd".to_string())
     }
 
     pub async fn get_watching_list(&self, limit: usize) -> PbResult<Vec<WatchingItem>> {
@@ -55,7 +81,11 @@ impl MovieService {
     }
 
     pub fn set_api_domain(&self, domain: &str) {
-        self.keydb_client.set_base_url(domain);
+        let clean = domain.trim_end_matches('/').to_string();
+        self.keydb_client.set_base_url(&clean);
+        if let Ok(mut lock) = self.base_url.write() {
+            *lock = clean;
+        }
     }
 
     pub async fn get_adult_movies(&self) -> PbResult<Vec<AdultMovieRecord>> {
@@ -88,7 +118,8 @@ impl MovieService {
                         }
                     }
                 }
-                Err(e)
+                eprintln!("[MovieService] get_adult_movies fallback (SurrealDB status: {})", e);
+                Ok(Vec::new())
             }
         }
     }
@@ -119,7 +150,8 @@ impl MovieService {
                         return Ok(lb);
                     }
                 }
-                Err(e)
+                eprintln!("[MovieService] get_leaderboards fallback (SurrealDB status: {})", e);
+                Ok(Leaderboards::default())
             }
         }
     }

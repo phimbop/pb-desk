@@ -62,43 +62,64 @@ export const getToken = (): string => {
 
 export const tmdbService = {
 	async getPopularActors(page = 1, language = 'vi-VN'): Promise<{ page: number; results: TmdbActor[]; total_pages: number; total_results: number }> {
+		const path = `person/popular?language=${language}&page=${page}`;
+		const primaryUrl = getTmdbUrl(path);
 		try {
-			const res = await fetch(getTmdbUrl(`person/popular?language=${language}&page=${page}`), {
-				headers: getTmdbHeaders()
+			const res = await fetch(primaryUrl, {
+				headers: getTmdbHeaders(primaryUrl)
 			});
 			if (!res.ok) throw new Error(`TMDB error: ${res.status}`);
 			return await res.json();
 		} catch (err) {
-			console.error('Failed to get popular actors from TMDB:', err);
+			console.warn('[tmdbService] Primary getPopularActors failed, retrying direct TMDB:', err);
+			try {
+				const directUrl = `https://api.themoviedb.org/3/${path}`;
+				const directRes = await fetch(directUrl, { headers: getTmdbHeaders(directUrl) });
+				if (directRes.ok) return await directRes.json();
+			} catch (fallbackErr) {
+				console.error('[tmdbService] Direct fallback failed:', fallbackErr);
+			}
 			return { page: 1, results: [], total_pages: 1, total_results: 0 };
 		}
 	},
 
 	async searchActors(query: string, page = 1, language = 'vi-VN'): Promise<{ page: number; results: TmdbActor[]; total_pages: number; total_results: number }> {
 		if (!query.trim()) return this.getPopularActors(page, language);
+		const path = `search/person?query=${encodeURIComponent(query)}&language=${language}&include_adult=false&page=${page}`;
+		const primaryUrl = getTmdbUrl(path);
 		try {
-			const res = await fetch(
-				getTmdbUrl(`search/person?query=${encodeURIComponent(query)}&language=${language}&include_adult=false&page=${page}`),
-				{ headers: getTmdbHeaders() }
-			);
+			const res = await fetch(primaryUrl, { headers: getTmdbHeaders(primaryUrl) });
 			if (!res.ok) throw new Error(`TMDB error: ${res.status}`);
 			return await res.json();
 		} catch (err) {
-			console.error('Failed to search actors from TMDB:', err);
+			console.warn('[tmdbService] Primary searchActors failed, retrying direct TMDB:', err);
+			try {
+				const directUrl = `https://api.themoviedb.org/3/${path}`;
+				const directRes = await fetch(directUrl, { headers: getTmdbHeaders(directUrl) });
+				if (directRes.ok) return await directRes.json();
+			} catch (fallbackErr) {
+				console.error('[tmdbService] Direct fallback failed:', fallbackErr);
+			}
 			return { page: 1, results: [], total_pages: 1, total_results: 0 };
 		}
 	},
 
 	async getActorDetail(actorId: string | number, language = 'vi-VN'): Promise<TmdbActorDetail | null> {
+		const path = `person/${actorId}?append_to_response=external_ids,movie_credits,tv_credits&language=${language}`;
+		const primaryUrl = getTmdbUrl(path);
 		try {
-			const res = await fetch(
-				getTmdbUrl(`person/${actorId}?append_to_response=external_ids,movie_credits,tv_credits&language=${language}`),
-				{ headers: getTmdbHeaders() }
-			);
+			const res = await fetch(primaryUrl, { headers: getTmdbHeaders(primaryUrl) });
 			if (!res.ok) throw new Error(`TMDB error: ${res.status}`);
 			return await res.json();
 		} catch (err) {
-			console.error('Failed to get actor detail from TMDB:', err);
+			console.warn('[tmdbService] Primary getActorDetail failed, retrying direct TMDB:', err);
+			try {
+				const directUrl = `https://api.themoviedb.org/3/${path}`;
+				const directRes = await fetch(directUrl, { headers: getTmdbHeaders(directUrl) });
+				if (directRes.ok) return await directRes.json();
+			} catch (fallbackErr) {
+				console.error('[tmdbService] Direct fallback failed:', fallbackErr);
+			}
 			return null;
 		}
 	},
@@ -109,83 +130,128 @@ export const tmdbService = {
 		page = 1,
 		language = 'vi-VN'
 	): Promise<{ page: number; results: any[]; total_pages: number; total_results: number }> {
+		const filterKey = type === 'tv' ? 'with_networks' : 'with_watch_providers';
+		const path = `discover/${type}?${filterKey}=${networkId}&language=${language}&page=${page}&sort_by=popularity.desc`;
+		const primaryUrl = getTmdbUrl(path);
 		try {
-			const filterKey = type === 'tv' ? 'with_networks' : 'with_watch_providers';
-			const res = await fetch(
-				getTmdbUrl(`discover/${type}?${filterKey}=${networkId}&language=${language}&page=${page}&sort_by=popularity.desc`),
-				{ headers: getTmdbHeaders() }
-			);
+			const res = await fetch(primaryUrl, { headers: getTmdbHeaders(primaryUrl) });
 			if (!res.ok) throw new Error(`TMDB error: ${res.status}`);
 			return await res.json();
 		} catch (err) {
-			console.error('Failed to get network movies from TMDB:', err);
+			console.warn('[tmdbService] Primary getMoviesByNetwork failed, retrying direct TMDB:', err);
+			try {
+				const directUrl = `https://api.themoviedb.org/3/${path}`;
+				const directRes = await fetch(directUrl, { headers: getTmdbHeaders(directUrl) });
+				if (directRes.ok) return await directRes.json();
+			} catch (fallbackErr) {
+				console.error('[tmdbService] Direct fallback failed:', fallbackErr);
+			}
 			return { page: 1, results: [], total_pages: 1, total_results: 0 };
 		}
 	},
 
 	async getMovieDetails(movieId: string | number, language = 'vi-VN'): Promise<any | null> {
+		const path = `movie/${movieId}?append_to_response=credits,recommendations,similar,videos&language=${language}`;
+		const primaryUrl = getTmdbUrl(path);
 		try {
-			const res = await fetch(
-				getTmdbUrl(`movie/${movieId}?append_to_response=credits,recommendations,similar,videos&language=${language}`),
-				{ headers: getTmdbHeaders() }
-			);
+			const res = await fetch(primaryUrl, { headers: getTmdbHeaders(primaryUrl) });
 			if (!res.ok) throw new Error(`TMDB error: ${res.status}`);
 			return await res.json();
 		} catch (err) {
-			console.error('Failed to get movie details from TMDB:', err);
+			console.warn('[tmdbService] Primary getMovieDetails failed, retrying direct TMDB:', err);
+			try {
+				const directUrl = `https://api.themoviedb.org/3/${path}`;
+				const directRes = await fetch(directUrl, { headers: getTmdbHeaders(directUrl) });
+				if (directRes.ok) return await directRes.json();
+			} catch (fallbackErr) {
+				console.error('[tmdbService] Direct fallback failed:', fallbackErr);
+			}
 			return null;
 		}
 	},
 
 	async getTvDetails(tvId: string | number, language = 'vi-VN'): Promise<any | null> {
+		const path = `tv/${tvId}?append_to_response=credits,recommendations,similar,videos&language=${language}`;
+		const primaryUrl = getTmdbUrl(path);
 		try {
-			const res = await fetch(
-				getTmdbUrl(`tv/${tvId}?append_to_response=credits,recommendations,similar,videos&language=${language}`),
-				{ headers: getTmdbHeaders() }
-			);
+			const res = await fetch(primaryUrl, { headers: getTmdbHeaders(primaryUrl) });
 			if (!res.ok) throw new Error(`TMDB error: ${res.status}`);
 			return await res.json();
 		} catch (err) {
-			console.error('Failed to get TV details from TMDB:', err);
+			console.warn('[tmdbService] Primary getTvDetails failed, retrying direct TMDB:', err);
+			try {
+				const directUrl = `https://api.themoviedb.org/3/${path}`;
+				const directRes = await fetch(directUrl, { headers: getTmdbHeaders(directUrl) });
+				if (directRes.ok) return await directRes.json();
+			} catch (fallbackErr) {
+				console.error('[tmdbService] Direct fallback failed:', fallbackErr);
+			}
 			return null;
 		}
 	},
 
 	async getTvPopular(page = 1, language = 'vi-VN'): Promise<{ page: number; results: any[]; total_pages: number; total_results: number }> {
+		const path = `tv/popular?language=${language}&page=${page}`;
+		const primaryUrl = getTmdbUrl(path);
 		try {
-			const res = await fetch(getTmdbUrl(`tv/popular?language=${language}&page=${page}`), {
-				headers: getTmdbHeaders()
+			const res = await fetch(primaryUrl, {
+				headers: getTmdbHeaders(primaryUrl)
 			});
 			if (!res.ok) throw new Error(`TMDB error: ${res.status}`);
 			return await res.json();
 		} catch (err) {
-			console.error('Failed to get popular TV series from TMDB:', err);
+			console.warn('[tmdbService] Primary getTvPopular failed, retrying direct TMDB:', err);
+			try {
+				const directUrl = `https://api.themoviedb.org/3/${path}`;
+				const directRes = await fetch(directUrl, { headers: getTmdbHeaders(directUrl) });
+				if (directRes.ok) return await directRes.json();
+			} catch (fallbackErr) {
+				console.error('[tmdbService] Direct fallback failed:', fallbackErr);
+			}
 			return { page: 1, results: [], total_pages: 1, total_results: 0 };
 		}
 	},
 
 	async getPopularMovies(page = 1, language = 'en-US'): Promise<{ page: number; results: any[]; total_pages: number; total_results: number }> {
+		const path = `movie/popular?language=${language}&page=${page}`;
+		const primaryUrl = getTmdbUrl(path);
 		try {
-			const res = await fetch(getTmdbUrl(`movie/popular?language=${language}&page=${page}`), {
-				headers: getTmdbHeaders()
+			const res = await fetch(primaryUrl, {
+				headers: getTmdbHeaders(primaryUrl)
 			});
 			if (!res.ok) throw new Error(`TMDB error: ${res.status}`);
 			return await res.json();
 		} catch (err) {
-			console.error('Failed to get popular movies from TMDB:', err);
+			console.warn('[tmdbService] Primary getPopularMovies failed, retrying direct TMDB:', err);
+			try {
+				const directUrl = `https://api.themoviedb.org/3/${path}`;
+				const directRes = await fetch(directUrl, { headers: getTmdbHeaders(directUrl) });
+				if (directRes.ok) return await directRes.json();
+			} catch (fallbackErr) {
+				console.error('[tmdbService] Direct fallback failed:', fallbackErr);
+			}
 			return { page: 1, results: [], total_pages: 1, total_results: 0 };
 		}
 	},
 
 	async getTopRatedMovies(page = 1, language = 'vi-VN'): Promise<{ page: number; results: any[]; total_pages: number; total_results: number }> {
+		const path = `movie/top_rated?language=${language}&page=${page}`;
+		const primaryUrl = getTmdbUrl(path);
 		try {
-			const res = await fetch(getTmdbUrl(`movie/top_rated?language=${language}&page=${page}`), {
-				headers: getTmdbHeaders()
+			const res = await fetch(primaryUrl, {
+				headers: getTmdbHeaders(primaryUrl)
 			});
 			if (!res.ok) throw new Error(`TMDB error: ${res.status}`);
 			return await res.json();
 		} catch (err) {
-			console.error('Failed to get top rated movies from TMDB:', err);
+			console.warn('[tmdbService] Primary getTopRatedMovies failed, retrying direct TMDB:', err);
+			try {
+				const directUrl = `https://api.themoviedb.org/3/${path}`;
+				const directRes = await fetch(directUrl, { headers: getTmdbHeaders(directUrl) });
+				if (directRes.ok) return await directRes.json();
+			} catch (fallbackErr) {
+				console.error('[tmdbService] Direct fallback failed:', fallbackErr);
+			}
 			return { page: 1, results: [], total_pages: 1, total_results: 0 };
 		}
 	}

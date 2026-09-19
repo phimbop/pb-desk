@@ -30,6 +30,7 @@ impl AuthService {
         let base_url = crate::surreal_client::load_env_var_or_file("PUBLIC_WEBSITE_URL")
             .or_else(|| crate::surreal_client::load_env_var_or_file("REMOTE_API_URL"))
             .or_else(|| crate::surreal_client::load_env_var_or_file("API_URL"))
+            .or_else(|| crate::surreal_client::load_env_var_or_file("API_DOMAIN"))
             .unwrap_or_else(|| DEFAULT_REMOTE_URL.to_string())
             .trim_end_matches('/')
             .to_string();
@@ -59,223 +60,100 @@ impl AuthService {
     }
 
     pub async fn login(&self, email: &str, password: &str) -> PbResult<AuthResponse> {
-        self.surreal_client.auth_signin(email, password).await
+        let req = ForwardRequest {
+            method: "POST".to_string(),
+            path: "/api/auth/login".to_string(),
+            body: Some(serde_json::json!({
+                "email": email,
+                "password": password
+            })),
+            token: None,
+        };
+        let resp = self.forward_remote(req).await?;
+        if resp.status == 200 {
+            let token = resp.session_token.clone();
+            let user: Option<AuthUser> = serde_json::from_value(
+                resp.body.get("user").cloned().unwrap_or(resp.body.clone())
+            ).ok();
+            Ok(AuthResponse {
+                success: true,
+                token,
+                user,
+                error: None,
+            })
+        } else {
+            let error = resp.body.get("error").and_then(|e| e.as_str()).map(|s| s.to_string());
+            Ok(AuthResponse {
+                success: false,
+                token: None,
+                user: None,
+                error: error.or_else(|| Some("Login failed".to_string())),
+            })
+        }
     }
 
     pub async fn signup(&self, email: &str, username: &str, password: &str) -> PbResult<AuthResponse> {
-        self.surreal_client.auth_signup(email, username, password).await
+        let req = ForwardRequest {
+            method: "POST".to_string(),
+            path: "/api/auth/signup".to_string(),
+            body: Some(serde_json::json!({
+                "email": email,
+                "username": username,
+                "password": password
+            })),
+            token: None,
+        };
+        let resp = self.forward_remote(req).await?;
+        if resp.status == 200 {
+            let token = resp.session_token.clone();
+            let user: Option<AuthUser> = serde_json::from_value(
+                resp.body.get("user").cloned().unwrap_or(resp.body.clone())
+            ).ok();
+            Ok(AuthResponse {
+                success: true,
+                token,
+                user,
+                error: None,
+            })
+        } else {
+            let error = resp.body.get("error").and_then(|e| e.as_str()).map(|s| s.to_string());
+            Ok(AuthResponse {
+                success: false,
+                token: None,
+                user: None,
+                error: error.or_else(|| Some("Signup failed".to_string())),
+            })
+        }
     }
 
     pub async fn get_me(&self, token: &str) -> PbResult<AuthUser> {
-        self.surreal_client.auth_get_me(token).await
+        let req = ForwardRequest {
+            method: "GET".to_string(),
+            path: "/api/auth/me".to_string(),
+            body: None,
+            token: Some(token.to_string()),
+        };
+        let resp = self.forward_remote(req).await?;
+        if resp.status == 200 {
+            let user_val = resp.body.get("user").cloned().unwrap_or(resp.body);
+            serde_json::from_value(user_val).map_err(|e| PbError::Serialization(e.to_string()))
+        } else {
+            Err(PbError::Unauthorized)
+        }
     }
 
-    pub async fn logout(&self, _token: Option<&str>) -> PbResult<()> {
+    pub async fn logout(&self, token: Option<&str>) -> PbResult<()> {
+        let req = ForwardRequest {
+            method: "POST".to_string(),
+            path: "/api/auth/logout".to_string(),
+            body: None,
+            token: token.map(|t| t.to_string()),
+        };
+        let _ = self.forward_remote(req).await;
         Ok(())
     }
 
     pub async fn forward_request(&self, req: ForwardRequest) -> PbResult<ForwardResponse> {
-        let path_clean = req.path.trim_start_matches('/');
-
-        // 1. Native handler for /api/user/favorites
-        if path_clean == "api/user/favorites" {
-            let user = match req.token.as_deref() {
-                Some(t) => self.surreal_client.auth_get_me(t).await.ok(),
-                None => None,
-            };
-            let user = match user {
-                Some(u) => u,
-                None => {
-                    return Ok(ForwardResponse {
-                        status: 401,
-                        body: serde_json::json!({ "error": "Unauthorized" }),
-                        session_token: None,
-                    });
-                }
-            };
-
-            if req.method.eq_ignore_ascii_case("GET") {
-                let favorites = self.surreal_client.get_user_favorites(&user.id).await?;
-                return Ok(ForwardResponse {
-                    status: 200,
-                    body: serde_json::Value::Array(favorites),
-                    session_token: None,
-                });
-            } else if req.method.eq_ignore_ascii_case("POST") {
-                if let Some(body) = req.body {
-                    let movie = body.get("movie");
-                    let action = body.get("action").and_then(|v| v.as_str());
-                    if let (Some(m), Some(act)) = (movie, action) {
-                        if act == "add" {
-                            self.surreal_client.add_user_favorite(&user.id, m).await?;
-                        } else {
-                            let m_id = m.get("_id").and_then(|v| v.as_str())
-                                .or_else(|| m.get("id").and_then(|v| v.as_str()))
-                                .or_else(|| m.get("slug").and_then(|v| v.as_str()))
-                                .unwrap_or("");
-                            let id_owned: String;
-                            let m_id_str = if m_id.is_empty() {
-                                if let Some(n) = m.get("id").and_then(|v| v.as_i64()) {
-                                    id_owned = n.to_string();
-                                    &id_owned
-                                } else {
-                                    m_id
-                                }
-                            } else {
-                                m_id
-                            };
-                            self.surreal_client.remove_user_favorite(&user.id, m_id_str).await?;
-                        }
-                        return Ok(ForwardResponse {
-                            status: 200,
-                            body: serde_json::json!({ "success": true }),
-                            session_token: None,
-                        });
-                    }
-                }
-                return Ok(ForwardResponse {
-                    status: 400,
-                    body: serde_json::json!({ "error": "Invalid request body" }),
-                    session_token: None,
-                });
-            }
-        }
-
-        // 2. Native handler for /api/user/played-list
-        if path_clean == "api/user/played-list" {
-            let user = match req.token.as_deref() {
-                Some(t) => self.surreal_client.auth_get_me(t).await.ok(),
-                None => None,
-            };
-            let user = match user {
-                Some(u) => u,
-                None => {
-                    return Ok(ForwardResponse {
-                        status: 401,
-                        body: serde_json::json!({ "error": "Unauthorized" }),
-                        session_token: None,
-                    });
-                }
-            };
-
-            if req.method.eq_ignore_ascii_case("GET") {
-                let played = self.surreal_client.get_user_played_list(&user.id).await?;
-                return Ok(ForwardResponse {
-                    status: 200,
-                    body: serde_json::Value::Array(played),
-                    session_token: None,
-                });
-            }
-        }
-
-        // 3. Native handler for /api/auth/migrate
-        if path_clean == "api/auth/migrate" {
-            let user = match req.token.as_deref() {
-                Some(t) => self.surreal_client.auth_get_me(t).await.ok(),
-                None => None,
-            };
-            let user = match user {
-                Some(u) => u,
-                None => {
-                    return Ok(ForwardResponse {
-                        status: 401,
-                        body: serde_json::json!({ "error": "Unauthorized" }),
-                        session_token: None,
-                    });
-                }
-            };
-
-            if let Some(body) = req.body {
-                let empty_vec = Vec::new();
-                let played_list = body.get("played_list").and_then(|v| v.as_array()).unwrap_or(&empty_vec);
-                let favorites = body.get("favorites").and_then(|v| v.as_array()).unwrap_or(&empty_vec);
-                let (migrated_p, migrated_f) = self.surreal_client.migrate_user_data(&user.id, played_list, favorites).await?;
-                return Ok(ForwardResponse {
-                    status: 200,
-                    body: serde_json::json!({
-                        "success": true,
-                        "migrated": {
-                            "played": migrated_p,
-                            "favorites": migrated_f
-                        }
-                    }),
-                    session_token: None,
-                });
-            }
-        }
-
-        // 4. Native handler for /api/auth/login, signup, me
-        if path_clean == "api/auth/login" {
-            if let Some(body) = req.body {
-                let email = body.get("email").and_then(|v| v.as_str()).unwrap_or("");
-                let password = body.get("password").and_then(|v| v.as_str()).unwrap_or("");
-                let res = self.login(email, password).await?;
-                if res.success {
-                    return Ok(ForwardResponse {
-                        status: 200,
-                        body: serde_json::json!({
-                            "token": res.token,
-                            "user": res.user
-                        }),
-                        session_token: res.token,
-                    });
-                } else {
-                    return Ok(ForwardResponse {
-                        status: 400,
-                        body: serde_json::json!({
-                            "error": res.error.unwrap_or_else(|| "Login failed".to_string())
-                        }),
-                        session_token: None,
-                    });
-                }
-            }
-        }
-
-        if path_clean == "api/auth/signup" {
-            if let Some(body) = req.body {
-                let email = body.get("email").and_then(|v| v.as_str()).unwrap_or("");
-                let username = body.get("username").and_then(|v| v.as_str()).unwrap_or("");
-                let password = body.get("password").and_then(|v| v.as_str()).unwrap_or("");
-                let res = self.signup(email, username, password).await?;
-                if res.success {
-                    return Ok(ForwardResponse {
-                        status: 200,
-                        body: serde_json::json!({
-                            "token": res.token,
-                            "user": res.user
-                        }),
-                        session_token: res.token,
-                    });
-                } else {
-                    return Ok(ForwardResponse {
-                        status: 400,
-                        body: serde_json::json!({
-                            "error": res.error.unwrap_or_else(|| "Signup failed".to_string())
-                        }),
-                        session_token: None,
-                    });
-                }
-            }
-        }
-
-        if path_clean == "api/auth/me" {
-            if let Some(token) = req.token.as_deref() {
-                if let Ok(user) = self.get_me(token).await {
-                    return Ok(ForwardResponse {
-                        status: 200,
-                        body: serde_json::json!({ "user": user }),
-                        session_token: Some(token.to_string()),
-                    });
-                }
-            }
-            return Ok(ForwardResponse {
-                status: 401,
-                body: serde_json::json!({ "error": "Unauthorized" }),
-                session_token: None,
-            });
-        }
-
-        // 5. Fallback for other routes (comments, ratings, playlists, notifications)
         self.forward_remote(req).await
     }
 

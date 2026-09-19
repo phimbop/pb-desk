@@ -91,6 +91,35 @@ impl SqliteStorage {
         }
     }
 
+    pub fn get_app_config(&self, key: &str) -> PbResult<Option<String>> {
+        let conn = self.conn.lock().map_err(|_| PbError::Internal("Lock poisoned".into()))?;
+        let mut stmt = conn
+            .prepare("SELECT value FROM app_settings WHERE key = ?1")
+            .map_err(|e| PbError::Database(e.to_string()))?;
+
+        let mut rows = stmt
+            .query(params![key])
+            .map_err(|e| PbError::Database(e.to_string()))?;
+
+        if let Some(row) = rows.next().map_err(|e| PbError::Database(e.to_string()))? {
+            let val: String = row.get(0).map_err(|e| PbError::Database(e.to_string()))?;
+            Ok(Some(val))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn set_app_config(&self, key: &str, value: &str) -> PbResult<()> {
+        let conn = self.conn.lock().map_err(|_| PbError::Internal("Lock poisoned".into()))?;
+        conn.execute(
+            "INSERT INTO app_settings (key, value) VALUES (?1, ?2)
+             ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            params![key, value],
+        )
+        .map_err(|e| PbError::Database(e.to_string()))?;
+        Ok(())
+    }
+
     pub fn is_movie_notified(&self, slug: &str, episode: Option<&str>) -> PbResult<bool> {
         let conn = self.conn.lock().map_err(|_| PbError::Internal("Lock poisoned".into()))?;
         let mut stmt = conn

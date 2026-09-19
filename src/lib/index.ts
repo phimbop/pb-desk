@@ -105,6 +105,11 @@ export const getTmdbUrl = (path: string) => {
 	}
 	cleanPath = cleanPath.replace(/^\//, '');
 
+	const website = getWebsiteUrl();
+	if (website && (website.startsWith('http://') || website.startsWith('https://'))) {
+		return `${website}/api/tmdb/${cleanPath}`;
+	}
+
 	return `https://api.themoviedb.org/3/${cleanPath}`;
 };
 
@@ -112,11 +117,26 @@ export const TMDB_READ_ACCESS_TOKEN_FALLBACK =
 	(typeof process !== 'undefined' && process.env?.TMDB_READ_ACCESS_TOKEN) ||
 	'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJhYmE4NThiZjllMmU5NTdkNDViZTc3YTIwM2I4NGYwNCIsInN1YiI6IjY0OGMyMzZiYzNjODkxMDEyZDVjYjU3ZSIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.S4fccGjfoALSIX9ra2YBljhPwCI5_8sQcdx_iQjC_gs';
 
-export const getTmdbHeaders = (): Record<string, string> => {
+export const getTmdbHeaders = (targetUrl?: string): Record<string, string> => {
 	const token =
 		(globalThis as any).TMDB_READ_ACCESS_TOKEN ||
 		(typeof process !== 'undefined' && process.env?.TMDB_READ_ACCESS_TOKEN) ||
 		TMDB_READ_ACCESS_TOKEN_FALLBACK;
+
+	// When using the reverse proxy (/api/tmdb/), the backend server handles TMDB authentication.
+	// Omitting the Authorization header keeps the request as a CORS-safelisted simple GET,
+	// preventing Chromium in Electron from sending an OPTIONS preflight (which Cloudflare blocks with 405).
+	// Only send Authorization header when directly contacting api.themoviedb.org.
+	const isDirectTmdb = targetUrl
+		? targetUrl.includes('api.themoviedb.org')
+		: !getWebsiteUrl() || getWebsiteUrl() === 'https://api.themoviedb.org';
+
+	if (!isDirectTmdb) {
+		return {
+			accept: 'application/json'
+		};
+	}
+
 	return {
 		accept: 'application/json',
 		...(token ? { Authorization: `Bearer ${token}` } : {})

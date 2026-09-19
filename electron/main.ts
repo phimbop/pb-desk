@@ -76,6 +76,13 @@ const pendingRequests = new Map<
 	number,
 	{ resolve: (val: any) => void; reject: (err: any) => void; timeout: NodeJS.Timeout }
 >();
+let activeApiDomain = (
+	process.env.PUBLIC_WEBSITE_URL ||
+	process.env.REMOTE_API_URL ||
+	process.env.API_URL ||
+	process.env.API_DOMAIN ||
+	'https://v3.phimbop.cfd'
+).trim().replace(/\/+$/, '');
 
 // Ensure single instance lock
 const gotTheLock = app.requestSingleInstanceLock();
@@ -232,6 +239,15 @@ function startSidecar() {
 				} else if (typeof settings.minimize_to_tray === 'boolean') {
 					cachedMinimizeToTray = settings.minimize_to_tray;
 				}
+			}
+		})
+		.catch(() => {});
+
+	invokeSidecar<string>('get_api_domain')
+		.then((domain) => {
+			if (domain && typeof domain === 'string' && (domain.startsWith('http://') || domain.startsWith('https://'))) {
+				activeApiDomain = domain.trim().replace(/\/+$/, '');
+				console.log(`[Electron] Active API domain loaded from sidecar: ${activeApiDomain}`);
 			}
 		})
 		.catch(() => {});
@@ -470,6 +486,15 @@ ipcMain.handle('pb-invoke', async (_event, { command, args }) => {
 		if (s && typeof s === 'object') {
 			if (typeof s.minimizeToTray === 'boolean') cachedMinimizeToTray = s.minimizeToTray;
 			if (typeof s.minimize_to_tray === 'boolean') cachedMinimizeToTray = s.minimize_to_tray;
+		}
+	}
+
+	// Synchronize active API domain when set_api_domain is called
+	if (command === 'set_api_domain' && args?.domain) {
+		const d = (args.domain as string).trim().replace(/\/+$/, '');
+		if (d.startsWith('http://') || d.startsWith('https://')) {
+			activeApiDomain = d;
+			console.log(`[Electron] Active API domain synchronized: ${activeApiDomain}`);
 		}
 	}
 
@@ -909,6 +934,17 @@ ipcMain.handle('show-notification', (_event, { title, body }) => {
 app.whenReady().then(() => {
 	cachedLocale = loadPersistedLocale();
 
+	// Strip Authorization for TMDB reverse proxy to maintain simple requests and prevent CORS preflights
+	session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
+		const requestHeaders = { ...details.requestHeaders };
+		const url = details.url || '';
+		if (url.includes('/api/tmdb/')) {
+			delete requestHeaders['Authorization'];
+			delete requestHeaders['authorization'];
+		}
+		callback({ cancel: false, requestHeaders });
+	});
+
 	// Strip X-Frame-Options and relax frame-ancestors in Content-Security-Policy for embedded player iframes
 	session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
 		const responseHeaders = { ...details.responseHeaders };
@@ -924,6 +960,33 @@ app.whenReady().then(() => {
 				responseHeaders[key] = ['cross-origin'];
 			}
 		}
+
+		// Dynamically adapt CORS for API domain, reverse proxies, CDNs, and internal requests
+		const initiator = details.initiator || '';
+		const url = details.url || '';
+		const isApiOrApp =
+			initiator.startsWith('app://') ||
+			initiator.includes('localhost') ||
+			(activeApiDomain && url.startsWith(activeApiDomain)) ||
+			url.includes('/api/tmdb/') ||
+			url.includes('phimbop.cfd');
+
+		if (isApiOrApp) {
+			responseHeaders['access-control-allow-origin'] = ['*'];
+			responseHeaders['access-control-allow-methods'] = ['GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD'];
+			responseHeaders['access-control-allow-headers'] = ['*'];
+			responseHeaders['access-control-expose-headers'] = ['*'];
+			responseHeaders['access-control-allow-credentials'] = ['true'];
+
+			if (details.method === 'OPTIONS') {
+				return callback({
+					cancel: false,
+					statusLine: 'HTTP/1.1 200 OK',
+					responseHeaders
+				});
+			}
+		}
+
 		callback({ cancel: false, responseHeaders });
 	});
 

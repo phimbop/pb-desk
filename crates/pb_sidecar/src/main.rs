@@ -75,9 +75,16 @@ async fn execute_method(state: &AppState, method: &str, params: Value) -> Result
                 .get("domain")
                 .and_then(|v| v.as_str())
                 .ok_or_else(|| "Missing domain parameter".to_string())?;
+            let domain = domain.trim_end_matches('/');
             state.movie_service.set_api_domain(domain);
             state.auth_service.set_api_domain(domain);
+            let _ = state.storage.set_app_config("api_domain", domain);
             Ok(serde_json::json!({ "success": true, "domain": domain }))
+        }
+
+        "get_api_domain" => {
+            let domain = state.auth_service.base_url();
+            Ok(serde_json::json!(domain))
         }
 
         "get_home_data" => {
@@ -491,6 +498,29 @@ async fn main() -> anyhow::Result<()> {
     let auth_service = AuthService::new(surreal_client.clone());
     let notification_worker = NotificationWorker::new(Arc::clone(&storage), api_client);
 
+    // Resolve API domain hierarchy on startup: Env -> SQLite storage -> Default
+    let env_domain = std::env::var("PUBLIC_WEBSITE_URL")
+        .or_else(|_| std::env::var("REMOTE_API_URL"))
+        .or_else(|_| std::env::var("API_URL"))
+        .or_else(|_| std::env::var("API_DOMAIN"))
+        .ok()
+        .filter(|s| !s.trim().is_empty());
+
+    let resolved_domain = if let Some(d) = env_domain {
+        d.trim_end_matches('/').to_string()
+    } else if let Ok(Some(db_domain)) = storage.get_app_config("api_domain") {
+        if !db_domain.trim().is_empty() {
+            db_domain.trim_end_matches('/').to_string()
+        } else {
+            "https://v3.phimbop.cfd".to_string()
+        }
+    } else {
+        "https://v3.phimbop.cfd".to_string()
+    };
+
+    movie_service.set_api_domain(&resolved_domain);
+    auth_service.set_api_domain(&resolved_domain);
+
     let state = Arc::new(AppState {
         movie_service,
         history_service,
@@ -639,5 +669,72 @@ mod tests {
         assert_eq!(res_unknown.id, serde_json::json!("test-str-id"));
         assert!(res_unknown.result.is_none());
         assert!(res_unknown.error.is_some());
+    }
+
+    #[tokio::test]
+    async fn test_api_domain_ipc_and_persistence() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let db_path = temp_dir.path().join("test_domain.db");
+        let storage = Arc::new(SqliteStorage::new(&db_path).unwrap());
+        let api_client = MovieApiClient::new();
+        let movie_service = MovieService::new(api_client.clone(), Arc::clone(&storage) as _);
+        let history_service = HistoryService::new(Arc::clone(&storage) as _);
+        let favorite_service = FavoriteService::new(Arc::clone(&storage) as _);
+        let surreal_client = SurrealClient::new();
+        let auth_service = AuthService::new(surreal_client.clone());
+        let notification_worker = NotificationWorker::new(Arc::clone(&storage), api_client);
+
+        let state = AppState {
+            movie_service,
+            history_service,
+            favorite_service,
+            auth_service,
+            surreal_client,
+            storage: Arc::clone(&storage),
+            notification_worker,
+        };
+
+        // 1. Initial domain
+        let res_get = handle_request(
+            &state,
+            Request {
+                id: serde_json::json!(1),
+                method: "get_api_domain".to_string(),
+                params: Value::Null,
+            },
+        )
+        .await;
+        assert!(res_get.error.is_none());
+
+        // 2. Set new domain via IPC
+        let res_set = handle_request(
+            &state,
+            Request {
+                id: serde_json::json!(2),
+                method: "set_api_domain".to_string(),
+                params: serde_json::json!({ "domain": "https://new-api.phimbop.cfd/" }),
+            },
+        )
+        .await;
+        assert!(res_set.error.is_none());
+
+        // 3. Verify get_api_domain returns trimmed domain
+        let res_get2 = handle_request(
+            &state,
+            Request {
+                id: serde_json::json!(3),
+                method: "get_api_domain".to_string(),
+                params: Value::Null,
+            },
+        )
+        .await;
+        assert_eq!(
+            res_get2.result,
+            Some(Value::String("https://new-api.phimbop.cfd".to_string()))
+        );
+
+        // 4. Verify persisted in SQLite
+        let persisted = storage.get_app_config("api_domain").unwrap();
+        assert_eq!(persisted, Some("https://new-api.phimbop.cfd".to_string()));
     }
 }
